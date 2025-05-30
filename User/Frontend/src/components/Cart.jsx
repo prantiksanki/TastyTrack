@@ -19,6 +19,7 @@ import {
   Info,
   CheckCircle
 } from 'lucide-react';
+import {useNavigate} from "react-router-dom"
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -31,33 +32,74 @@ const Cart = () => {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isLoading, setIsLoading] = useState(true);
   const [orderPlacing, setOrderPlacing] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+
+    const email = localStorage.getItem('email');
+    const isValid = localStorage.getItem('isValid');
+
+    if(!email || !isValid) {
+        navigate("/")
+    }
+    
+  })
 
   // Mock addresses
-  const [savedAddresses, setSavedAddresses] = useState([
-    {
-      id: 1,
-      type: 'home',
-      title: 'Home',
-      address: '123 Main Street, Apartment 4B',
-      city: 'Kolkata',
-      pincode: '700001',
-      landmark: 'Near City Mall',
-      isDefault: true
+
+  useEffect(() => {
+    const user = localStorage.getItem("email"); // or user ID if you're using _id
+    fetch(`http://localhost:80/address?user=${encodeURIComponent(user)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Addresses:", data);
+        setSavedAddresses(data);
+      })
+      .catch(error => {
+        console.error("Error fetching addresses:", error);
+      });
+
+    
+  },  [])
+
+
+ useEffect(() => {
+  const user = localStorage.getItem("email");
+
+  const addressData = newAddress
+
+  fetch('http://localhost:80/add-address', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
     },
-    {
-      id: 2,
-      type: 'work',
-      title: 'Office',
-      address: '456 Business District, Floor 8',
-      city: 'Kolkata',
-      pincode: '700091',
-      landmark: 'Opposite Metro Station',
-      isDefault: false
-    }
-  ]);
+    body: JSON.stringify(addressData)
+  })
+  
+    .then(response => response.json())
+    .then(data => {
+      console.log("Address added:", data);
+    })
+    .catch(error => {
+      console.error("Error adding address:", error);
+    });
+
+}, [showAddAddressModal]);
+
+
+
+  
 
   const [newAddress, setNewAddress] = useState({
-    type: 'home',
+    type: 'residential',
     title: '',
     address: '',
     city: 'Kolkata',
@@ -198,8 +240,8 @@ const Cart = () => {
   };
 
   const goBack = () => {
-    alert('Going back to menu');
-  };
+    navigate("/")
+};
 
   if (isLoading) {
     return (

@@ -5,6 +5,8 @@ const nodemailer = require('nodemailer')
 const dotenv = require('dotenv')
 const bcrypt = require('bcrypt');
 const User = require("./models/user") ; 
+const Menu = require("./models/menu") ; 
+const Address = require("./models/address") ; 
 
 
 dotenv.config();
@@ -106,12 +108,62 @@ app.post('/login' , async (req,res)=>
 })
 
 
-app.get("/menu" , (req,res) =>
-{
-     const {id, name , description, price, time, rating, category , image, isPopular} = req.body ; 
-     
+app.get("/menu", (req, res) => {
+  Menu.find()
+    .then(menu => res.json(menu))
+    .catch(err => res.status(500).json({ error: "Failed to fetch menu" }));
+});
 
-})
+
+app.post("/add-address" , (req,res) =>
+{
+  const {type, title, address, city, pincode, landmark, isDefault, user} = req.body ; 
+  if(!type ||!title ||!address ||!city ||!pincode ||!landmark || !user)
+  {
+    return res.status(400).json({error : "All fields are required"}) ;
+  }
+  const userExists = User.findById(user) ;
+  if(!userExists)
+  {
+    return res.status(400).json({error : "User does not exist"}) ;  // Check if user exists before creating new address
+  }
+
+  const newAddress = Address.create(
+    {
+      type,
+      title,
+      address,
+      city,
+      pincode,
+      landmark,
+      isDefault, 
+      user, 
+    }
+  )
+  newAddress.save()
+ .then(address => res.json(address))
+ .catch(err =>
+   res.status(500).json({ error: "Failed to add address" })
+  )
+}
+)
+
+// GET /address?user=prantiksanki@gmail.com
+app.get("/address", async (req, res) => {
+  const user = req.query.user;
+
+  if (!user) {
+    return res.status(400).json({ error: "User is required" });
+  }
+
+  try {
+    const addresses = await Address.find({ user });
+    res.json(addresses);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch addresses" });
+  }
+});
 
 
 
