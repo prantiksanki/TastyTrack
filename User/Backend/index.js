@@ -15,6 +15,10 @@ const port = 80 ||  process.env.PORT;
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
+app.use(cors({
+  origin: 'http://localhost:5173', // Replace with your frontend origin
+  credentials: true
+}));
 
 
 mongoose.connect("mongodb://localhost:27017/tastytrack")
@@ -24,7 +28,7 @@ mongoose.connect("mongodb://localhost:27017/tastytrack")
 
 
 app.post("/signup", async (req, res) => {
-  const { name, email, password, confirmPassword } = req.body;
+  const { firstName, lastName, email, password, confirmPassword, phone } = req.body;
 
 
   if (password !== confirmPassword) {
@@ -58,7 +62,7 @@ app.post("/signup", async (req, res) => {
       // console.log(result) ;
        // Create and save new user
 
-
+       const name = firstName + " " + lastName;
        const saltRounds = 8 ;
        const hashedPassword = await bcrypt.hash(password, saltRounds);
        const user = new User({ name, email, password : hashedPassword });

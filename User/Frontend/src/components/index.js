@@ -3,8 +3,9 @@ import NavBar from "./NavBar" ;
 import MainContent from "./MainContent" ;
 import FoodCard from "./FoodCard" ;
 import Footer from "./Footer" ;
-import LoginPage from "./LoginPage";
-import SignupPage from "./SignupPage";
+import AuthPage from "./AuthPage";
+import Cart from "./Cart";
+
 
 
 export
@@ -13,6 +14,6 @@ export
    MainContent, 
    FoodCard, 
    Footer, 
-   LoginPage, 
-   SignupPage
+   AuthPage, 
+   Cart, 
 }

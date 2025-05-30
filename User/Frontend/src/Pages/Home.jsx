@@ -1,10 +1,23 @@
 // const {MainContent, Footer, FoodCard} = require("../components") ; 
-import {MainContent, Footer, FoodCard, NavBar, SignupPage, LoginPage} from "../components"
+import {MainContent, Footer, FoodCard, NavBar} from "../components"
 import {useEffect, useState} from 'react' ;
 
 const Home = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+   useEffect(() => {
+      const email = localStorage.getItem('email');
+      const isValid = localStorage.getItem('isValid');
+  
+      // Log for debugging
+      console.log("email:", email, "isValid:", isValid);
+  
+      if (email && JSON.parse(isValid) === true) {
+        setIsLoggedIn(true);
+  
+      }
+    }, []);
 
   // Sample food data
   const foods = [
