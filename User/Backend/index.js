@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const User = require("./models/user") ; 
 const Menu = require("./models/menu") ; 
 const Address = require("./models/address") ; 
+const Cart = require("./models/cart") ; 
 
 
 dotenv.config();
@@ -164,6 +165,59 @@ app.get("/address", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch addresses" });
   }
 });
+
+
+//             id: 1,
+//             name: 'Butter Chicken',
+//             description: 'Creamy tomato-based curry with tender chicken',
+//             price: 320,
+//             quantity: 2,
+//             image: '🍛',
+//             customizations: ['Extra Spicy', 'No Onions']
+
+app.post("/cart" , async (req,res) =>
+{
+  const {id, name, description , price, image , customizations, user} = req.body ; 
+
+  let quantity = 1 ; 
+
+  const cartSave  = await Cart.create(
+    {
+      id,
+      name,
+      description,
+      price,
+      image,
+      customizations,
+      quantity,
+      user,
+    }
+  )
+  cartSave.save()
+  .then(cart => res.json(cart))
+  .catch(err =>
+    res.status(500).json({ error: "Failed to add to cart" })
+  )
+
+
+})
+
+
+app.get("/cart", async (req, res) => {
+
+  const user  = req.query.user;
+  try 
+  {
+    const cart = await Cart.find({user: user}); 
+    res.json(cart) ;
+  }
+  catch(err)
+  {
+    res.status(500).json({ error: "Failed to get cart" })
+  }
+
+  
+})
 
 
 

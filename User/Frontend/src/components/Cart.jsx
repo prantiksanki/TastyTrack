@@ -34,6 +34,17 @@ const Cart = () => {
   const [orderPlacing, setOrderPlacing] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([])
   const navigate = useNavigate();
+
+
+  useEffect(() => {
+    
+    console.log("Cart items:", cartItems);
+
+    
+},[setOrderPlacing])
+
+
+  
   
   useEffect(() => {
 
@@ -79,7 +90,7 @@ const Cart = () => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
+      'Authorization': `Bearer ${localStorage.getItem('email')}`
     },
     body: JSON.stringify(addressData)
   })
@@ -107,39 +118,28 @@ const Cart = () => {
     landmark: ''
   });
 
+
   // Mock API call to fetch cart items
   useEffect(() => {
     const fetchCartItems = () => {
       setTimeout(() => {
-        setCartItems([
-          {
-            id: 1,
-            name: 'Butter Chicken',
-            description: 'Creamy tomato-based curry with tender chicken',
-            price: 320,
-            quantity: 2,
-            image: '🍛',
-            customizations: ['Extra Spicy', 'No Onions']
-          },
-          {
-            id: 2,
-            name: 'Garlic Naan',
-            description: 'Fresh baked bread with garlic and herbs',
-            price: 80,
-            quantity: 3,
-            image: '🫓',
-            customizations: []
-          },
-          {
-            id: 3,
-            name: 'Biryani Special',
-            description: 'Aromatic basmati rice with spiced chicken',
-            price: 450,
-            quantity: 1,
-            image: '🍚',
-            customizations: ['Extra Raita', 'Boiled Egg']
-          }
-        ]);
+   const email = localStorage.getItem('email');
+
+  fetch(`http://localhost:80/cart?user=${encodeURIComponent(email)}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Cart items:', data);
+      setCartItems(data);
+      // use data as needed
+    })
+    .catch(err => console.error('Error fetching cart items:', err));
+
+          
         setSelectedAddress(savedAddresses.find(addr => addr.isDefault));
         setIsLoading(false);
       }, 1000);
@@ -149,20 +149,20 @@ const Cart = () => {
   }, []);
 
   const updateQuantity = (id, newQuantity) => {
-    if (newQuantity === 0) {
-      removeItem(id);
-      return;
-    }
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
+  if (newQuantity === 0) {
+    removeItem(id);
+    return;
+  }
+  setCartItems(items =>
+    items.map(item =>
+      item._id === id ? { ...item, quantity: newQuantity } : item
+    )
+  );
+};
 
-  const removeItem = (id) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-  };
+const removeItem = (id) => {
+  setCartItems(items => items.filter(item => item._id !== id));
+};
 
   const applyPromoCode = () => {
     const validPromoCodes = {
@@ -198,6 +198,8 @@ const Cart = () => {
       isDefault: savedAddresses.length === 0
     };
 
+
+    
     setSavedAddresses([...savedAddresses, newAddr]);
     setSelectedAddress(newAddr);
     setShowAddAddressModal(false);
@@ -211,11 +213,14 @@ const Cart = () => {
     });
   };
 
+  
+  
+
   // Calculations
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = subtotal > 500 ? 0 : 40;
-  const platformFee = 5;
-  const gst = Math.round(subtotal * 0.05);
+  const deliveryFee = subtotal > 0 ? 0 : 40;
+  const platformFee = 0;
+  const gst = 0 ;
   
   let discount = 0;
   if (appliedPromo) {
@@ -343,9 +348,10 @@ const Cart = () => {
               
               <div className="divide-y divide-gray-100">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="text-3xl">{item.image}</div>
+              <div key={item._id} className="p-6">
+                <div className="flex items-start space-x-4">
+                  <img src={item.image} alt="Cart item" className="object-cover w-24 h-24 rounded" />
+
                       
                       <div className="flex-1">
                         <h4 className="mb-1 font-semibold" style={{ color: '#333333' }}>{item.name}</h4>
@@ -364,7 +370,7 @@ const Cart = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <button 
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item._id, item.quantity - 1)}
                               className="p-1 border rounded-full hover:bg-gray-50"
                               style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
                             >
@@ -372,7 +378,7 @@ const Cart = () => {
                             </button>
                             <span className="w-8 font-semibold text-center" style={{ color: '#333333' }}>{item.quantity}</span>
                             <button 
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item._id, item.quantity + 1)}
                               className="p-1 border rounded-full hover:bg-gray-50"
                               style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
                             >
@@ -383,7 +389,7 @@ const Cart = () => {
                           <div className="flex items-center space-x-3">
                             <span className="font-semibold" style={{ color: '#333333' }}>₹{item.price * item.quantity}</span>
                             <button 
-                              onClick={() => removeItem(item.id)}
+                              onClick={() => removeItem(item._id)}
                               className="p-1 text-red-500 rounded hover:bg-red-50"
                             >
                               <Trash2 size={16} />
@@ -482,7 +488,7 @@ const Cart = () => {
                 </div>
                 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">GST (5%)</span>
+                  <span className="text-gray-600">GST (0%)</span>
                   <span style={{ color: '#333333' }}>₹{gst}</span>
                 </div>
                 

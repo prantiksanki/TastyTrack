@@ -17,6 +17,7 @@ const Home = () => {
     }
 
     // Fetch menu items
+    setTimeout(() => {
     fetch("http://localhost:80/menu")
       .then(response => response.json())
       .then(data => {
@@ -26,12 +27,35 @@ const Home = () => {
       .catch(err => {
         console.error("Error fetching food data:", err);
       });
+    } , 1000)
 
   }, []);
 
   const handleAddToCart = (food) => {
     setCartCount(prev => prev + 1);
-    console.log('Added to cart:', food.name);
+    const foods = food; 
+    console.log('Added to cart:', foods);
+    // id: 1,
+    //         name: 'Butter Chicken',
+    //         description: 'Creamy tomato-based curry with tender chicken',
+    //         price: 320,
+    //         quantity: 2,
+    //         image: '🍛',
+    //         customizations: ['Extra Spicy', 'No Onions']
+
+   fetch("http://localhost:80/cart", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: foods.name,
+              description : foods.description,
+              price : foods.price,
+              image : foods.image,
+              customizations : foods.customizations,
+              user: localStorage.getItem("email")
+            })
+});
+
   };
 
   const handleCall = () => {

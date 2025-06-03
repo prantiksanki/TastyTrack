@@ -16,13 +16,7 @@ const menuSchema = mongoose.Schema(
         type: Number,
         required: true,
         min: 0
-       }, 
-       quantity:
-       {
-        type: Number,
-        required: true,
-        min: 0
-       } , 
+       },
        image:
        {
         type: String,
@@ -31,7 +25,7 @@ const menuSchema = mongoose.Schema(
        }, 
        customizations:
        {
-        type: Array,
+         type: Array,
        }, 
        time:
        {
@@ -55,7 +49,8 @@ const menuSchema = mongoose.Schema(
         enum: ["Starters", "Main Course", "Dessert", "Beverages"],
         default: "Main Course",
        }
-    }
+    }, 
+    { timestamps: true }
 )
 
 const Menu = mongoose.model("menu", menuSchema) ;
