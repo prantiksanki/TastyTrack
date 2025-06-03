@@ -5,8 +5,23 @@ const Home = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [foods, setFoods] = useState([]); // <-- Manage food items in state
+  // const [isLoading , setIsLoading] = useState(true) ; 
+
+
+  //  if (isLoading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#FAFAFA' }}>
+  //       <div className="text-center">
+  //         <div className="w-12 h-12 mx-auto mb-4 border-b-2 rounded-full animate-spin" style={{ borderColor: '#FF4C29' }}></div>
+  //         <p style={{ color: '#333333' }}>Loading...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
 
   useEffect(() => {
+    // setIsLoading(true) ; 
     const email = localStorage.getItem('email');
     const isValid = localStorage.getItem('isValid');
 
@@ -27,8 +42,9 @@ const Home = () => {
       .catch(err => {
         console.error("Error fetching food data:", err);
       });
-    } , 1000)
+            // setIsLoading(false) ; 
 
+    } , 1000)
   }, []);
 
   const handleAddToCart = (food) => {

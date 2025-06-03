@@ -241,7 +241,15 @@ const removeItem = (id) => {
     setTimeout(() => {
       setOrderPlacing(false);
       alert('Order placed successfully! 🎉');
-    }, 3000);
+      console.log(selectedAddress);
+      console.log(cartItems)
+      console.log(orderNote);
+      console.log(promoCode);
+      console.log(paymentMethod);
+      console.log(total);
+
+      
+    }, 2000);
   };
 
   const goBack = () => {

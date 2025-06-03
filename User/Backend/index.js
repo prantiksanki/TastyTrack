@@ -215,8 +215,17 @@ app.get("/cart", async (req, res) => {
   {
     res.status(500).json({ error: "Failed to get cart" })
   }
+})
 
+app.post("/order" , async (req,res) =>
+{
+  const {selectedAddress , cartItems, orderNote, promoCode , paymentMethod , total, user} = req.body ; 
+  if(!selectedAddress ||!cartItems ||!paymentMethod ||!total)
+  {
+    return res.status(400).json({ error: "Missing required fields" })
+  }
   
+
 })
 
 
