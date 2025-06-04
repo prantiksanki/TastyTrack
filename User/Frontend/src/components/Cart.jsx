@@ -33,6 +33,7 @@ const Cart = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [orderPlacing, setOrderPlacing] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([])
+  const [newAddressSet , setNewAddressSet] = useState(false) ; 
   const navigate = useNavigate();
 
 
@@ -42,8 +43,6 @@ const Cart = () => {
 
     
 },[setOrderPlacing])
-
-
   
   
   useEffect(() => {
@@ -92,7 +91,7 @@ const Cart = () => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('email')}`
     },
-    body: JSON.stringify(addressData)
+    'body': JSON.stringify(addressData)
   })
   
     .then(response => response.json())
@@ -103,7 +102,7 @@ const Cart = () => {
       console.error("Error adding address:", error);
     });
 
-}, [showAddAddressModal]);
+}, [setNewAddressSet]);
 
 
 
@@ -118,7 +117,7 @@ const Cart = () => {
     landmark: ''
   });
 
-
+  
   // Mock API call to fetch cart items
   useEffect(() => {
     const fetchCartItems = () => {
@@ -187,6 +186,8 @@ const removeItem = (id) => {
   };
 
   const addNewAddress = () => {
+    setNewAddressSet(true) ; 
+    
     if (!newAddress.title || !newAddress.address || !newAddress.pincode) {
       alert('Please fill all required fields');
       return;
@@ -199,6 +200,7 @@ const removeItem = (id) => {
     };
 
 
+    
     
     setSavedAddresses([...savedAddresses, newAddr]);
     setSelectedAddress(newAddr);
@@ -214,6 +216,11 @@ const removeItem = (id) => {
   };
 
   
+
+  const handleCart = () => {
+    window.location.reload();
+  };
+
   
 
   // Calculations
@@ -231,26 +238,59 @@ const removeItem = (id) => {
 
   const total = subtotal + deliveryFee + platformFee + gst - discount;
 
-  const placeOrder = () => {
-    if (!selectedAddress) {
-      alert('Please select a delivery address');
+const placeOrder = async () => {
+  if (!selectedAddress) {
+    alert('Please select a delivery address');
+    return;
+  }
+
+  setOrderPlacing(true);
+
+  try {
+    const response = await fetch('http://localhost:80/order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        user: localStorage.getItem('email'),
+        selectedAddress,
+        cartItems,
+        promoCode,
+        paymentMethod,
+        total, 
+        orderNote, 
+      })
+    });
+
+    if (!response.ok) {
+      // If server returns an error status
+      const errorData = await response.json();
+      alert(`Failed to place order: ${errorData.message || response.statusText}`);
+      setOrderPlacing(false);
       return;
+     window.location.reload();
     }
 
-    setOrderPlacing(true);
-    setTimeout(() => {
-      setOrderPlacing(false);
-      alert('Order placed successfully! 🎉');
-      console.log(selectedAddress);
-      console.log(cartItems)
-      console.log(orderNote);
-      console.log(promoCode);
-      console.log(paymentMethod);
-      console.log(total);
+    const data = await response.json();
+    alert('Order placed successfully! 🎉');
+    console.log('Order response:', data);
 
-      
-    }, 2000);
-  };
+    // Optionally clear cart or reset states here
+
+  } 
+  catch (error) {
+    console.error('Error placing order:', error);
+    alert('An error occurred while placing your order. Please try again.');
+  } 
+  finally 
+  {
+    setOrderPlacing(false);
+    handleCart(); 
+  }
+};
+
 
   const goBack = () => {
     navigate("/")
@@ -722,6 +762,7 @@ const removeItem = (id) => {
                 <button 
                   onClick={addNewAddress}
                   className="flex-1 px-4 py-3 font-semibold text-white rounded-lg hover:shadow-lg"
+                  
                   style={{ backgroundColor: '#FF4C29' }}
                 >
                   Save Address

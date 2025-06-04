@@ -8,6 +8,7 @@ const User = require("./models/user") ;
 const Menu = require("./models/menu") ; 
 const Address = require("./models/address") ; 
 const Cart = require("./models/cart") ; 
+const Order = require("./models/order") ; 
 
 
 dotenv.config();
@@ -224,7 +225,28 @@ app.post("/order" , async (req,res) =>
   {
     return res.status(400).json({ error: "Missing required fields" })
   }
-  
+
+  const order = await Order.create({
+    selectedAddress ,
+    cartItems ,
+    orderNote ,
+    promoCode ,
+    paymentMethod ,
+    total,
+    user,
+  })
+  order.save()
+  .then(order =>
+    res.json(order))
+    .catch(err =>
+      res.status(500).json({ error: "Failed to place order" })
+    )
+
+    // Clear cart after successful order
+    Cart.deleteMany({ user: user})
+    .catch(err => console.log(err))
+    .then(() => console.log("Cart cleared successfully"))
+    .finally(() => console.log("Server is running on port 80"))
 
 })
 
