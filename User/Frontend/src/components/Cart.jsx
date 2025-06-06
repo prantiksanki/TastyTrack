@@ -678,7 +678,7 @@ const placeOrder = async () => {
                   {[
                     { value: 'home', label: 'Home', icon: Home },
                     { value: 'work', label: 'Work', icon: Building },
-                    { value: 'other', label: 'Other', icon: MapPin }
+                    // { value: 'other', label: 'Other', icon: MapPin }
                   ].map(({ value, label, icon: Icon }) => (
                     <label key={value} className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -697,12 +697,12 @@ const placeOrder = async () => {
               </div>
               
               <div>
-                <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Title *</label>
+                <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Name</label>
                 <input
                   type="text"
                   value={newAddress.title}
                   onChange={(e) => setNewAddress({...newAddress, title: e.target.value})}
-                  placeholder="e.g., Home, Office"
+                  placeholder="John Doe"
                   className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
                 />
               </div>

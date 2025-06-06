@@ -48,6 +48,11 @@ const menuSchema = mongoose.Schema(
         required: true,
         enum: ["Starters", "Main Course", "Dessert", "Beverages"],
         default: "Main Course",
+       }, 
+       available:
+       {
+         type: Boolean, 
+         default: true, 
        }
     }, 
     { timestamps: true }

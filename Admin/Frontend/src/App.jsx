@@ -2,14 +2,14 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import RestaurantAdminDashboard from './components/RestaurantAdminDashboard'
+import MainPage from './pages/MainPage'
 
 function App() {
 
 
   return (
     <>
-      <RestaurantAdminDashboard/>
+      <MainPage/>
     </>
   )
 }

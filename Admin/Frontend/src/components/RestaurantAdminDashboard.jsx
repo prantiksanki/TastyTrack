@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Bell, 
-  Package, 
-  DollarSign, 
-  Users, 
-  ShoppingCart, 
-  Menu as MenuIcon, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Check, 
-  Clock, 
+import {
+  Bell,
+  Package,
+  DollarSign,
+  Users,
+  ShoppingCart,
+  Menu as MenuIcon,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Check,
+  Clock,
   Search,
   Filter,
   Calendar,
@@ -26,7 +26,7 @@ import {
   Save,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
 } from 'lucide-react';
 
 const RestaurantAdminDashboard = () => {
@@ -42,123 +42,124 @@ const RestaurantAdminDashboard = () => {
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Sample data
-  const [orders, setOrders] = useState([
-    {
-      id: 'ORD001',
-      customer: 'John Doe',
-      phone: '+91 98765 43210',
-      items: [
-        { name: 'Margherita Pizza', quantity: 2, price: 299 },
-        { name: 'Garlic Bread', quantity: 1, price: 99 }
-      ],
-      total: 697,
-      status: 'pending',
-      paymentStatus: 'paid',
-      timestamp: new Date().toISOString(),
-      address: '123 Main St, City'
-    },
-    {
-      id: 'ORD002',
-      customer: 'Jane Smith',
-      phone: '+91 87654 32109',
-      items: [
-        { name: 'Chicken Biryani', quantity: 1, price: 249 },
-        { name: 'Raita', quantity: 1, price: 49 }
-      ],
-      total: 298,
-      status: 'delivered',
-      paymentStatus: 'unpaid',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      address: '456 Oak Ave, City'
-    }
-  ]);
+  // Fetch today's orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('http://localhost:81/orders/today');
+        if (!response.ok) {
+          throw new Error('Failed to fetch orders');
+        }
+        const data = await response.json();
+        setOrders(data);
+        setNewOrderCount(data.length);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching orders:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
 
-  const [menuItems, setMenuItems] = useState([
-    { id: 1, name: 'Margherita Pizza', price: 299, category: 'Pizza', available: true },
-    { id: 2, name: 'Chicken Biryani', price: 249, category: 'Biryani', available: true },
-    { id: 3, name: 'Garlic Bread', price: 99, category: 'Sides', available: false },
-    { id: 4, name: 'Raita', price: 49, category: 'Sides', available: true }
-  ]);
-
-  const [customers, setCustomers] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      phone: '+91 98765 43210',
-      email: 'john@example.com',
-      address: '123 Main St, City',
-      totalOrders: 15,
-      pendingAmount: 0,
-      totalSpent: 4500
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      phone: '+91 87654 32109',
-      email: 'jane@example.com',
-      address: '456 Oak Ave, City',
-      totalOrders: 8,
-      pendingAmount: 298,
-      totalSpent: 2100
-    }
-  ]);
-
-  const [coupons, setCoupons] = useState([
-    { id: 1, code: 'SAVE20', discount: 20, type: 'percentage', active: true, minOrder: 200 },
-    { id: 2, code: 'FLAT50', discount: 50, type: 'fixed', active: true, minOrder: 300 }
-  ]);
-
-  const [payments, setPayments] = useState([
-    { id: 1, customer: 'John Doe', amount: 697, date: new Date().toISOString(), type: 'credit', status: 'completed' },
-    { id: 2, customer: 'Jane Smith', amount: -298, date: new Date().toISOString(), type: 'debit', status: 'pending' }
-  ]);
-
-  // Simulate new order notifications
+  // Simulate new order notifications (replace with API call if available)
   useEffect(() => {
     const interval = setInterval(() => {
       if (Math.random() > 0.8) {
-        setNewOrderCount(prev => prev + 1);
-        // You could add a new order to the orders array here
+        setNewOrderCount((prev) => prev + 1);
       }
-    }, 5000);
+      // Optional: Fetch new orders from a hypothetical endpoint
+      
+      const fetchNewOrders = async () => {
+        try {
+          const response = await fetch('http://localhost:81/orders/new');
+          const newOrders = await response.json();
+          setOrders((prev) => [...newOrders]);
+          // setOrders((prev) => [...prev, ...newOrders]);
+
+          setNewOrderCount((prev) => prev + newOrders.length);
+        } catch (err) {
+          console.error('Error fetching new orders:', err);
+        }
+      };
+      fetchNewOrders();
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const todayOrders = orders.filter(order => 
-    new Date(order.timestamp).toDateString() === new Date().toDateString()
+  const todayOrders = orders.filter(
+    (order) => new Date(order.createdAt).toDateString() === new Date().toDateString()
   );
 
   const todayTotal = todayOrders.reduce((sum, order) => sum + order.total, 0);
-  const pendingOrders = orders.filter(order => order.status === 'pending');
-  const deliveredOrders = orders.filter(order => order.status === 'delivered');
+  const pendingOrders = orders.filter((order) => order.isActive);
+  const deliveredOrders = orders.filter((order) => !order.isActive);
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const response = await fetch(`http://localhost:81/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus === 'pending' }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update order status');
+      }
+      setOrders(
+        orders.map((order) =>
+          order._id === orderId ? { ...order, isActive: newStatus === 'pending' } : order
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating order status:', err);
+    }
   };
 
-  const togglePaymentStatus = (orderId) => {
-    setOrders(orders.map(order => 
-      order.id === orderId 
-        ? { ...order, paymentStatus: order.paymentStatus === 'paid' ? 'unpaid' : 'paid' }
-        : order
-    ));
+
+
+  const togglePaymentStatus = async (orderId) => {
+    try {
+      const order = orders.find((o) => o._id === orderId);
+      const response = await fetch(`http://localhost:81/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPaid: !order.isPaid }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update payment status');
+      }
+      setOrders(
+        orders.map((order) =>
+          order._id === orderId ? { ...order, isPaid: !order.isPaid } : order
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating payment status:', err);
+    }
   };
 
   const toggleItemAvailability = (itemId) => {
-    setMenuItems(menuItems.map(item => 
-      item.id === itemId ? { ...item, available: !item.available } : item
-    ));
+    setMenuItems(
+      menuItems.map((item) =>
+        item.id === itemId ? { ...item, available: !item.available } : item
+      )
+    );
   };
 
   const addOrUpdateItem = (itemData) => {
     if (editingItem) {
-      setMenuItems(menuItems.map(item => 
-        item.id === editingItem.id ? { ...item, ...itemData } : item
-      ));
+      setMenuItems(
+        menuItems.map((item) => (item.id === editingItem.id ? { ...item, ...itemData } : item))
+      );
     } else {
       const newItem = { ...itemData, id: Date.now() };
       setMenuItems([...menuItems, newItem]);
@@ -168,14 +169,16 @@ const RestaurantAdminDashboard = () => {
   };
 
   const deleteItem = (itemId) => {
-    setMenuItems(menuItems.filter(item => item.id !== itemId));
+    setMenuItems(menuItems.filter((item) => item.id !== itemId));
   };
 
   const addOrUpdateCoupon = (couponData) => {
     if (editingCoupon) {
-      setCoupons(coupons.map(coupon => 
-        coupon.id === editingCoupon.id ? { ...coupon, ...couponData } : coupon
-      ));
+      setCoupons(
+        coupons.map((coupon) =>
+          coupon.id === editingCoupon.id ? { ...coupon, ...couponData } : coupon
+        )
+      );
     } else {
       const newCoupon = { ...couponData, id: Date.now() };
       setCoupons([...coupons, newCoupon]);
@@ -185,7 +188,7 @@ const RestaurantAdminDashboard = () => {
   };
 
   const deleteCoupon = (couponId) => {
-    setCoupons(coupons.filter(coupon => coupon.id !== couponId));
+    setCoupons(coupons.filter((coupon) => coupon.id !== couponId));
   };
 
   const addPayment = (paymentData) => {
@@ -194,18 +197,88 @@ const RestaurantAdminDashboard = () => {
     setShowPaymentModal(false);
   };
 
+  // Hardcoded data (replace with API calls if available)
+  const [menuItems, setMenuItems] = useState([
+    { id: 1, name: 'Margherita Pizza', price: 299, category: 'Pizza', available: true },
+    { id: 2, name: 'Chicken Biryani', price: 249, category: 'Biryani', available: true },
+    { id: 3, name: 'Garlic Bread', price: 99, category: 'Sides', available: false },
+    { id: 4, name: 'Raita', price: 49, category: 'Sides', available: true },
+  ]);
+
+  const [customers, setCustomers] = useState([
+    {
+      id: 1,
+      name: 'John Doe',
+      email: 'john@example.com',
+      phone: '+91 98765 43210',
+      address: '123 Main St, City',
+      totalOrders: 15,
+      pendingAmount: 0,
+      totalSpent: 4500,
+    },
+    {
+      id: 2,
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      phone: '+91 87654 32109',
+      address: '456 Oak Ave, City',
+      totalOrders: 8,
+      pendingAmount: 298,
+      totalSpent: 2100,
+    },
+    {
+      id: 3,
+      name: 'Kumkum',
+      email: 'kumkum@gmail.com',
+      phone: '+91 98765 43211',
+      address: 'Ghatal, West Bengal, India',
+      totalOrders: 1,
+      pendingAmount: 711,
+      totalSpent: 711,
+    },
+  ]);
+
+  const [coupons, setCoupons] = useState([
+    { id: 1, code: 'SAVE20', discount: 20, type: 'percentage', active: true, minOrder: 200 },
+    { id: 2, code: 'FLAT50', discount: 50, type: 'fixed', active: true, minOrder: 300 },
+    { id: 3, code: 'NEWUSER', discount: 10, type: 'percentage', active: true, minOrder: 500 },
+  ]);
+
+  const [payments, setPayments] = useState([
+    {
+      id: 1,
+      customer: 'john@example.com',
+      amount: 697,
+      date: new Date().toISOString(),
+      type: 'credit',
+      status: 'completed',
+    },
+    {
+      id: 2,
+      customer: 'jane@example.com',
+      amount: -298,
+      date: new Date().toISOString(),
+      type: 'debit',
+      status: 'pending',
+    },
+  ]);
+
+  const filteredCustomers = customers.filter((customer) =>
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const TabButton = ({ id, icon: Icon, label, badge }) => (
     <button
       onClick={() => setActiveTab(id)}
       className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors relative ${
-        activeTab === id 
-          ? 'bg-red-500 text-white' 
-          : 'text-gray-600 hover:bg-gray-100'
+        activeTab === id ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-100'
       }`}
+      aria-current={activeTab === id ? 'page' : undefined}
     >
       <Icon size={20} />
       <span className="font-medium">{label}</span>
-      {badge && (
+      {badge > 0 && (
         <span className="absolute px-2 py-1 text-xs bg-yellow-400 rounded-full -top-2 -right-2">
           {badge}
         </span>
@@ -217,152 +290,79 @@ const RestaurantAdminDashboard = () => {
     <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-bold text-gray-800">{order.id}</h3>
-          <p className="text-sm text-gray-600">{order.customer}</p>
-          <p className="text-sm text-gray-500">{order.phone}</p>
+          <h3 className="font-bold text-gray-800">Order ID: {order._id}</h3>
+          <p className="text-sm text-gray-600">{order.user}</p>
+          <p className="text-sm text-gray-500">{order.selectedAddress?.address}</p>
+          <p className="text-sm text-gray-500">{order.selectedAddress?.pincode}</p>
         </div>
         <div className="text-right">
           <p className="text-lg font-bold text-red-500">₹{order.total}</p>
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            order.status === 'pending' 
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-green-100 text-green-800'
-          }`}>
-            {order.status}
+          <span
+            className={`px-2 py-1 rounded-full text-xs ${
+              order.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+            }`}
+          >
+            {order.isActive ? 'Pending' : 'Delivered'}
           </span>
         </div>
       </div>
-      
-      <div className="mb-3 space-y-1">
-        {order.items.map((item, idx) => (
-          <div key={idx} className="flex justify-between text-sm">
-            <span>{item.name} x{item.quantity}</span>
-            <span>₹{item.price * item.quantity}</span>
+
+      <div className="mb-3 space-y-2">
+        {order.cartItems.map((item, idx) => (
+          <div key={idx} className="flex justify-between pb-1 text-sm border-b">
+            <p>
+              {item.name} x{item.quantity}
+            </p>
+            <p>₹{item.price * item.quantity}</p>
           </div>
         ))}
       </div>
+      {order.orderNote && (
+        <div className="mb-3">
+          <p className="text-sm text-gray-600">
+            <strong>Note:</strong> {order.orderNote}
+          </p>
+        </div>
+      )}
+      {order.promoCode && (
+        <div className="mb-3">
+          <p className="text-sm text-gray-600">
+            <strong>Promo Code:</strong> {order.promoCode}
+          </p>
+        </div>
+      )}
 
-      <div className="flex gap-2 mt-3">
+      <div className="flex flex-wrap gap-2 mt-3">
         <button
           onClick={() => {
             setSelectedOrder(order);
             setShowOrderModal(true);
           }}
           className="flex-1 px-3 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+          aria-label={`View details for order ${order._id}`}
         >
           View Details
         </button>
-        {order.status === 'pending' && (
+
+        {order.isActive && (
           <button
-            onClick={() => updateOrderStatus(order.id, 'delivered')}
+            onClick={() => updateOrderStatus(order._id, 'delivered')}
             className="flex-1 px-3 py-2 text-sm text-white bg-green-500 rounded hover:bg-green-600"
+            aria-label={`Mark order ${order._id} as delivered`}
           >
             Mark Delivered
           </button>
         )}
-        <button
-          onClick={() => togglePaymentStatus(order.id)}
-          className={`px-3 py-2 rounded text-sm ${
-            order.paymentStatus === 'paid'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-        </button>
-      </div>
-    </div>
-  );
 
-  const ItemModal = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md p-6 bg-white rounded-lg">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">
-            {editingItem ? 'Edit Item' : 'Add New Item'}
-          </h2>
-          <button
-            onClick={() => {
-              setShowItemModal(false);
-              setEditingItem(null);
-            }}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target);
-          addOrUpdateItem({
-            name: formData.get('name'),
-            price: parseInt(formData.get('price')),
-            category: formData.get('category'),
-            available: formData.get('available') === 'on'
-          });
-        }}>
-          <div className="space-y-4">
-            <div>
-              <label className="block mb-1 text-sm font-medium">Name</label>
-              <input
-                name="name"
-                type="text"
-                defaultValue={editingItem?.name || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                required
-              />
-            </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium">Price</label>
-              <input
-                name="price"
-                type="number"
-                defaultValue={editingItem?.price || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                required
-              />
-            </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium">Category</label>
-              <input
-                name="category"
-                type="text"
-                defaultValue={editingItem?.category || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                required
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                name="available"
-                type="checkbox"
-                defaultChecked={editingItem?.available || true}
-                className="w-4 h-4"
-              />
-              <label className="text-sm font-medium">Available</label>
-            </div>
-          </div>
-          
-          <div className="flex gap-2 mt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setShowItemModal(false);
-                setEditingItem(null);
-              }}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
-            >
-              Save
-            </button>
-          </div>
-        </form>
+        <button
+          onClick={() => togglePaymentStatus(order._id)}
+          className={`px-3 py-2 rounded text-sm ${
+            order.isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}
+          aria-label={`Toggle payment status for order ${order._id}`}
+        >
+          {order.isPaid ? 'Paid' : 'Unpaid'}
+        </button>
       </div>
     </div>
   );
@@ -371,35 +371,39 @@ const RestaurantAdminDashboard = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md p-6 bg-white rounded-lg">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">
-            {editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}
-          </h2>
+          <h2 className="text-xl font-bold">{editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}</h2>
           <button
             onClick={() => {
               setShowCouponModal(false);
               setEditingCoupon(null);
             }}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Close coupon modal"
           >
             <X size={24} />
           </button>
         </div>
-        
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target);
-          addOrUpdateCoupon({
-            code: formData.get('code'),
-            discount: parseInt(formData.get('discount')),
-            type: formData.get('type'),
-            minOrder: parseInt(formData.get('minOrder')),
-            active: formData.get('active') === 'on'
-          });
-        }}>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            addOrUpdateCoupon({
+              code: formData.get('code'),
+              discount: parseInt(formData.get('discount')),
+              type: formData.get('type'),
+              minOrder: parseInt(formData.get('minOrder')),
+              active: formData.get('active') === 'on',
+            });
+          }}
+        >
           <div className="space-y-4">
             <div>
-              <label className="block mb-1 text-sm font-medium">Coupon Code</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-code">
+                Coupon Code
+              </label>
               <input
+                id="coupon-code"
                 name="code"
                 type="text"
                 defaultValue={editingCoupon?.code || ''}
@@ -408,8 +412,11 @@ const RestaurantAdminDashboard = () => {
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Discount</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-discount">
+                Discount
+              </label>
               <input
+                id="coupon-discount"
                 name="discount"
                 type="number"
                 defaultValue={editingCoupon?.discount || ''}
@@ -418,8 +425,11 @@ const RestaurantAdminDashboard = () => {
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Type</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-type">
+                Type
+              </label>
               <select
+                id="coupon-type"
                 name="type"
                 defaultValue={editingCoupon?.type || 'percentage'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -429,8 +439,11 @@ const RestaurantAdminDashboard = () => {
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Minimum Order</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-minOrder">
+                Minimum Order
+              </label>
               <input
+                id="coupon-minOrder"
                 name="minOrder"
                 type="number"
                 defaultValue={editingCoupon?.minOrder || ''}
@@ -440,15 +453,18 @@ const RestaurantAdminDashboard = () => {
             </div>
             <div className="flex items-center gap-2">
               <input
+                id="coupon-active"
                 name="active"
                 type="checkbox"
                 defaultChecked={editingCoupon?.active || true}
                 className="w-4 h-4"
               />
-              <label className="text-sm font-medium">Active</label>
+              <label className="text-sm font-medium" htmlFor="coupon-active">
+                Active
+              </label>
             </div>
           </div>
-          
+
           <div className="flex gap-2 mt-6">
             <button
               type="button"
@@ -457,12 +473,14 @@ const RestaurantAdminDashboard = () => {
                 setEditingCoupon(null);
               }}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              aria-label="Cancel coupon changes"
             >
               Cancel
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+              aria-label="Save coupon"
             >
               Save
             </button>
@@ -480,26 +498,33 @@ const RestaurantAdminDashboard = () => {
           <button
             onClick={() => setShowPaymentModal(false)}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Close payment modal"
           >
             <X size={24} />
           </button>
         </div>
-        
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target);
-          addPayment({
-            customer: formData.get('customer'),
-            amount: parseFloat(formData.get('amount')) * (formData.get('type') === 'debit' ? -1 : 1),
-            type: formData.get('type'),
-            status: formData.get('status'),
-            notes: formData.get('notes')
-          });
-        }}>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            addPayment({
+              customer: formData.get('customer'),
+              amount:
+                parseFloat(formData.get('amount')) * (formData.get('type') === 'debit' ? -1 : 1),
+              type: formData.get('type'),
+              status: formData.get('status'),
+              notes: formData.get('notes'),
+            });
+          }}
+        >
           <div className="space-y-4">
             <div>
-              <label className="block mb-1 text-sm font-medium">Customer</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="payment-customer">
+                Customer
+              </label>
               <input
+                id="payment-customer"
                 name="customer"
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -507,8 +532,11 @@ const RestaurantAdminDashboard = () => {
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Amount</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="payment-amount">
+                Amount
+              </label>
               <input
+                id="payment-amount"
                 name="amount"
                 type="number"
                 step="0.01"
@@ -517,8 +545,11 @@ const RestaurantAdminDashboard = () => {
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Type</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="payment-type">
+                Type
+              </label>
               <select
+                id="payment-type"
                 name="type"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
@@ -527,8 +558,11 @@ const RestaurantAdminDashboard = () => {
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Status</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="payment-status">
+                Status
+              </label>
               <select
+                id="payment-status"
                 name="status"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
@@ -537,26 +571,31 @@ const RestaurantAdminDashboard = () => {
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium">Notes</label>
+              <label className="block mb-1 text-sm font-medium" htmlFor="payment-notes">
+                Notes
+              </label>
               <textarea
+                id="payment-notes"
                 name="notes"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 rows="3"
               />
             </div>
           </div>
-          
+
           <div className="flex gap-2 mt-6">
             <button
               type="button"
               onClick={() => setShowPaymentModal(false)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              aria-label="Cancel payment entry"
             >
               Cancel
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+              aria-label="Add payment entry"
             >
               Add Entry
             </button>
@@ -578,11 +617,12 @@ const RestaurantAdminDashboard = () => {
               </div>
               <h1 className="text-2xl font-bold text-gray-900">Restaurant Admin</h1>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setNewOrderCount(0)}
                 className="relative p-2 text-gray-600 hover:text-red-500"
+                aria-label="View notifications"
               >
                 <Bell size={24} />
                 {newOrderCount > 0 && (
@@ -598,6 +638,16 @@ const RestaurantAdminDashboard = () => {
       </header>
 
       <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        {error && (
+          <div className="p-4 mb-4 text-red-800 bg-red-100 rounded-lg">
+            <AlertCircle className="inline-block mr-2" size={20} />
+            {error}
+          </div>
+        )}
+        {isLoading && (
+          <div className="p-4 text-center text-gray-600">Loading orders...</div>
+        )}
+
         <div className="flex gap-8">
           {/* Sidebar */}
           <div className="w-64 p-4 bg-white rounded-lg shadow-sm">
@@ -671,8 +721,8 @@ const RestaurantAdminDashboard = () => {
                 <div className="p-6 bg-white rounded-lg shadow-sm">
                   <h2 className="mb-4 text-lg font-semibold">Recent Orders</h2>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {todayOrders.slice(0, 6).map(order => (
-                      <OrderCard key={order.id} order={order} />
+                    {todayOrders.slice(0, 6).map((order) => (
+                      <OrderCard key={order._id} order={order} />
                     ))}
                   </div>
                 </div>
@@ -684,18 +734,24 @@ const RestaurantAdminDashboard = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Orders Management</h2>
                   <div className="flex gap-2">
-                    <button className="px-4 py-2 text-white bg-yellow-500 rounded-lg hover:bg-yellow-600">
+                    <button
+                      className="px-4 py-2 text-white bg-yellow-500 rounded-lg hover:bg-yellow-600"
+                      aria-label={`View ${pendingOrders.length} pending orders`}
+                    >
                       Pending ({pendingOrders.length})
                     </button>
-                    <button className="px-4 py-2 text-white bg-green-500 rounded-lg hover:bg-green-600">
+                    <button
+                      className="px-4 py-2 text-white bg-green-500 rounded-lg hover:bg-green-600"
+                      aria-label={`View ${deliveredOrders.length} delivered orders`}
+                    >
                       Delivered ({deliveredOrders.length})
                     </button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {orders.map(order => (
-                    <OrderCard key={order.id} order={order} />
+                  {orders.map((order) => (
+                    <OrderCard key={order._id} order={order} />
                   ))}
                 </div>
               </div>
@@ -708,6 +764,7 @@ const RestaurantAdminDashboard = () => {
                   <button
                     onClick={() => setShowItemModal(true)}
                     className="flex items-center gap-2 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+                    aria-label="Add new menu item"
                   >
                     <Plus size={20} />
                     Add Item
@@ -736,7 +793,7 @@ const RestaurantAdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {menuItems.map(item => (
+                      {menuItems.map((item) => (
                         <tr key={item.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">{item.name}</div>
@@ -755,6 +812,7 @@ const RestaurantAdminDashboard = () => {
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
                               }`}
+                              aria-label={`Toggle availability for ${item.name}`}
                             >
                               {item.available ? 'Available' : 'Unavailable'}
                             </button>
@@ -767,12 +825,14 @@ const RestaurantAdminDashboard = () => {
                                   setShowItemModal(true);
                                 }}
                                 className="text-blue-600 hover:text-blue-900"
+                                aria-label={`Edit ${item.name}`}
                               >
                                 <Edit size={16} />
                               </button>
                               <button
                                 onClick={() => deleteItem(item.id)}
                                 className="text-red-600 hover:text-red-900"
+                                aria-label={`Delete ${item.name}`}
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -795,15 +855,21 @@ const RestaurantAdminDashboard = () => {
                       type="text"
                       placeholder="Search customers..."
                       className="px-4 py-2 border border-gray-300 rounded-lg"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      aria-label="Search customers"
                     />
-                    <button className="px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600">
+                    <button
+                      className="px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+                      aria-label="Search"
+                    >
                       <Search size={20} />
                     </button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {customers.map(customer => (
+                  {filteredCustomers.map((customer) => (
                     <div key={customer.id} className="p-6 bg-white rounded-lg shadow-sm">
                       <div className="flex items-start justify-between mb-4">
                         <div>
@@ -829,11 +895,12 @@ const RestaurantAdminDashboard = () => {
                             setShowCustomerModal(true);
                           }}
                           className="text-blue-600 hover:text-blue-800"
+                          aria-label={`View details for ${customer.name}`}
                         >
                           <Eye size={20} />
                         </button>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-gray-600">Total Orders</p>
@@ -844,7 +911,7 @@ const RestaurantAdminDashboard = () => {
                           <p className="font-semibold">₹{customer.totalSpent}</p>
                         </div>
                       </div>
-                      
+
                       {customer.pendingAmount > 0 && (
                         <div className="p-3 mt-4 rounded-lg bg-red-50">
                           <p className="text-sm text-red-800">
@@ -865,6 +932,7 @@ const RestaurantAdminDashboard = () => {
                   <button
                     onClick={() => setShowPaymentModal(true)}
                     className="flex items-center gap-2 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+                    aria-label="Add new payment entry"
                   >
                     <Plus size={20} />
                     Add Entry
@@ -878,7 +946,7 @@ const RestaurantAdminDashboard = () => {
                       <div>
                         <p className="text-sm text-gray-600">Total Receivables</p>
                         <p className="text-2xl font-bold text-green-600">
-                          ₹{payments.filter(p => p.amount > 0).reduce((sum, p) => sum + p.amount, 0)}
+                          ₹{payments.filter((p) => p.amount > 0).reduce((sum, p) => sum + p.amount, 0)}
                         </p>
                       </div>
                       <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg">
@@ -892,7 +960,7 @@ const RestaurantAdminDashboard = () => {
                       <div>
                         <p className="text-sm text-gray-600">Total Payables</p>
                         <p className="text-2xl font-bold text-red-600">
-                          ₹{Math.abs(payments.filter(p => p.amount < 0).reduce((sum, p) => sum + p.amount, 0))}
+                          ₹{Math.abs(payments.filter((p) => p.amount < 0).reduce((sum, p) => sum + p.amount, 0))}
                         </p>
                       </div>
                       <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-lg">
@@ -905,11 +973,13 @@ const RestaurantAdminDashboard = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Net Balance</p>
-                        <p className={`text-2xl font-bold ${
-                          payments.reduce((sum, p) => sum + p.amount, 0) >= 0 
-                            ? 'text-green-600' 
-                            : 'text-red-600'
-                        }`}>
+                        <p
+                          className={`text-2xl font-bold ${
+                            payments.reduce((sum, p) => sum + p.amount, 0) >= 0
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }`}
+                        >
                           ₹{payments.reduce((sum, p) => sum + p.amount, 0)}
                         </p>
                       </div>
@@ -943,24 +1013,28 @@ const RestaurantAdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {payments.map(payment => (
+                      {payments.map((payment) => (
                         <tr key={payment.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">{payment.customer}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`text-sm font-medium ${
-                              payment.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
+                            <div
+                              className={`text-sm font-medium ${
+                                payment.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}
+                            >
                               ₹{Math.abs(payment.amount)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              payment.type === 'credit'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                payment.type === 'credit'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {payment.type === 'credit' ? 'Received' : 'Given'}
                             </span>
                           </td>
@@ -968,11 +1042,13 @@ const RestaurantAdminDashboard = () => {
                             {new Date(payment.date).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              payment.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                payment.status === 'completed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
                               {payment.status}
                             </span>
                           </td>
@@ -991,6 +1067,7 @@ const RestaurantAdminDashboard = () => {
                   <button
                     onClick={() => setShowCouponModal(true)}
                     className="flex items-center gap-2 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+                    aria-label="Add new coupon"
                   >
                     <Plus size={20} />
                     Add Coupon
@@ -998,13 +1075,18 @@ const RestaurantAdminDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {coupons.map(coupon => (
-                    <div key={coupon.id} className="p-6 bg-white border-l-4 border-yellow-400 rounded-lg shadow-sm">
+                  {coupons.map((coupon) => (
+                    <div
+                      key={coupon.id}
+                      className="p-6 bg-white border-l-4 border-yellow-400 rounded-lg shadow-sm"
+                    >
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-bold text-yellow-600">{coupon.code}</h3>
                           <p className="text-sm text-gray-600">
-                            {coupon.type === 'percentage' ? `${coupon.discount}% OFF` : `₹${coupon.discount} OFF`}
+                            {coupon.type === 'percentage'
+                              ? `${coupon.discount}% OFF`
+                              : `₹${coupon.discount} OFF`}
                           </p>
                           <p className="text-sm text-gray-500">Min order: ₹{coupon.minOrder}</p>
                         </div>
@@ -1015,33 +1097,40 @@ const RestaurantAdminDashboard = () => {
                               setShowCouponModal(true);
                             }}
                             className="text-blue-600 hover:text-blue-800"
+                            aria-label={`Edit coupon ${coupon.code}`}
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => deleteCoupon(coupon.id)}
                             className="text-red-600 hover:text-red-800"
+                            aria-label={`Delete coupon ${coupon.code}`}
                           >
                             <Trash2 size={16} />
                           </button>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          coupon.active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            coupon.active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {coupon.active ? 'Active' : 'Inactive'}
                         </span>
                         <button
                           onClick={() => {
-                            setCoupons(coupons.map(c => 
-                              c.id === coupon.id ? { ...c, active: !c.active } : c
-                            ));
+                            setCoupons(
+                              coupons.map((c) =>
+                                c.id === coupon.id ? { ...c, active: !c.active } : c
+                              )
+                            );
                           }}
                           className="text-sm text-blue-600 hover:text-blue-800"
+                          aria-label={`Toggle status for coupon ${coupon.code}`}
                         >
                           Toggle Status
                         </button>
@@ -1055,7 +1144,7 @@ const RestaurantAdminDashboard = () => {
             {activeTab === 'reports' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Reports & Analytics</h2>
-                
+
                 {/* Monthly Report */}
                 <div className="p-6 bg-white rounded-lg shadow-sm">
                   <h3 className="mb-4 text-lg font-semibold">Monthly Report</h3>
@@ -1076,7 +1165,7 @@ const RestaurantAdminDashboard = () => {
                     </div>
                     <div className="p-4 text-center rounded-lg bg-purple-50">
                       <p className="text-2xl font-bold text-purple-600">
-                        ₹{Math.round(orders.reduce((sum, order) => sum + order.total, 0) / orders.length)}
+                        ₹{orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.total, 0) / orders.length) : 0}
                       </p>
                       <p className="text-sm text-gray-600">Avg Order Value</p>
                     </div>
@@ -1088,7 +1177,10 @@ const RestaurantAdminDashboard = () => {
                   <h3 className="mb-4 text-lg font-semibold">Top Selling Items</h3>
                   <div className="space-y-3">
                     {menuItems.slice(0, 5).map((item, index) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                      >
                         <div className="flex items-center gap-3">
                           <span className="flex items-center justify-center w-6 h-6 text-sm text-white bg-red-500 rounded-full">
                             {index + 1}
@@ -1111,20 +1203,21 @@ const RestaurantAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Order Modal */}
       {showOrderModal && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Order Details - {selectedOrder.id}</h2>
+              <h2 className="text-xl font-bold">Order Details - {selectedOrder._id}</h2>
               <button
                 onClick={() => setShowOrderModal(false)}
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Close order modal"
               >
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="space-y-6">
               {/* Customer Info */}
               <div className="p-4 rounded-lg bg-gray-50">
@@ -1132,16 +1225,31 @@ const RestaurantAdminDashboard = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Users size={16} />
-                    <span>{selectedOrder.customer}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone size={16} />
-                    <span>{selectedOrder.phone}</span>
+                    <span>{selectedOrder.user}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin size={16} />
-                    <span>{selectedOrder.address}</span>
+                    <span>{selectedOrder.selectedAddress?.address}</span>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} />
+                    <span>{selectedOrder.selectedAddress?.pincode}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CreditCard size={16} />
+                    <span>Payment Method: {selectedOrder.paymentMethod}</span>
+                  </div>
+                  {selectedOrder.orderNote && (
+                    <div className="flex items-center gap-2">
+                      <span>Note: {selectedOrder.orderNote}</span>
+                    </div>
+                  )}
+                  {selectedOrder.promoCode && (
+                    <div className="flex items-center gap-2">
+                      <Gift size={16} />
+                      <span>Promo Code: {selectedOrder.promoCode}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1149,7 +1257,7 @@ const RestaurantAdminDashboard = () => {
               <div>
                 <h3 className="mb-3 font-semibold">Order Items</h3>
                 <div className="space-y-2">
-                  {selectedOrder.items.map((item, idx) => (
+                  {selectedOrder.cartItems.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between py-2 border-b">
                       <div>
                         <span className="font-medium">{item.name}</span>
@@ -1168,39 +1276,38 @@ const RestaurantAdminDashboard = () => {
               {/* Status & Actions */}
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block mb-2 text-sm font-medium">Order Status</label>
+                  <label className="block mb-2 text-sm font-medium" htmlFor="order-status">
+                    Order Status
+                  </label>
                   <select
-                    value={selectedOrder.status}
+                    id="order-status"
+                    value={selectedOrder.isActive ? 'pending' : 'delivered'}
                     onChange={(e) => {
-                      updateOrderStatus(selectedOrder.id, e.target.value);
-                      setSelectedOrder({...selectedOrder, status: e.target.value});
+                      updateOrderStatus(selectedOrder._id, e.target.value);
+                      setSelectedOrder({ ...selectedOrder, isActive: e.target.value === 'pending' });
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     <option value="pending">Pending</option>
-                    <option value="preparing">Preparing</option>
-                    <option value="ready">Ready</option>
                     <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
                 <div className="flex-1">
                   <label className="block mb-2 text-sm font-medium">Payment Status</label>
                   <button
                     onClick={() => {
-                      togglePaymentStatus(selectedOrder.id);
+                      togglePaymentStatus(selectedOrder._id);
                       setSelectedOrder({
-                        ...selectedOrder, 
-                        paymentStatus: selectedOrder.paymentStatus === 'paid' ? 'unpaid' : 'paid'
+                        ...selectedOrder,
+                        isPaid: !selectedOrder.isPaid,
                       });
                     }}
                     className={`w-full px-4 py-2 rounded-lg ${
-                      selectedOrder.paymentStatus === 'paid'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-red-500 text-white'
+                      selectedOrder.isPaid ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                     }`}
+                    aria-label={`Toggle payment status for order ${selectedOrder._id}`}
                   >
-                    {selectedOrder.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                    {selectedOrder.isPaid ? 'Paid' : 'Unpaid'}
                   </button>
                 </div>
               </div>
@@ -1209,6 +1316,7 @@ const RestaurantAdminDashboard = () => {
         </div>
       )}
 
+      {/* Customer Modal */}
       {showCustomerModal && selectedCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
@@ -1217,11 +1325,12 @@ const RestaurantAdminDashboard = () => {
               <button
                 onClick={() => setShowCustomerModal(false)}
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Close customer modal"
               >
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="space-y-6">
               {/* Customer Info */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1256,9 +1365,11 @@ const RestaurantAdminDashboard = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Pending Amount:</span>
-                      <span className={`font-semibold ${
-                        selectedCustomer.pendingAmount > 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
+                      <span
+                        className={`font-semibold ${
+                          selectedCustomer.pendingAmount > 0 ? 'text-red-600' : 'text-green-600'
+                        }`}
+                      >
                         ₹{selectedCustomer.pendingAmount}
                       </span>
                     </div>
@@ -1271,29 +1382,33 @@ const RestaurantAdminDashboard = () => {
                 <h3 className="mb-3 font-semibold">Recent Orders</h3>
                 <div className="space-y-2">
                   {orders
-                    .filter(order => order.customer === selectedCustomer.name)
+                    .filter((order) => order.user === selectedCustomer.email)
                     .slice(0, 5)
-                    .map(order => (
-                      <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    .map((order) => (
+                      <div
+                        key={order._id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                      >
                         <div>
-                          <span className="font-medium">{order.id}</span>
+                          <span className="font-medium">{order._id}</span>
                           <span className="ml-2 text-gray-600">
-                            {new Date(order.timestamp).toLocaleDateString()}
+                            {new Date(order.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">₹{order.total}</p>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            order.status === 'pending' 
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {order.status}
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              order.isActive
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}
+                          >
+                            {order.isActive ? 'Pending' : 'Delivered'}
                           </span>
                         </div>
                       </div>
-                    ))
-                  }
+                    ))}
                 </div>
               </div>
             </div>
@@ -1307,5 +1422,6 @@ const RestaurantAdminDashboard = () => {
     </div>
   );
 };
+
 
 export default RestaurantAdminDashboard;
