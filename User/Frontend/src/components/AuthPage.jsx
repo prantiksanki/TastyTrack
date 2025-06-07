@@ -18,6 +18,7 @@ const AuthPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
+    phoneNo:'', 
     password: '',
     confirmPassword: '',
     firstName: '',
@@ -428,6 +429,7 @@ const AuthPage = () => {
                   setIsLogin(!isLogin);
                   setFormData({
                     email: '',
+                    phoneNo: '',
                     password: '',
                     confirmPassword: '',
                     firstName: '',

@@ -34,6 +34,7 @@ mongoose.connect("mongodb://localhost:27017/tastytrack")
 
 app.post("/signup", async (req, res) => {
   const { firstName, lastName, email, password, confirmPassword, phone } = req.body;
+  console.log(req.body);
 
 
   if (password !== confirmPassword) {
@@ -70,7 +71,7 @@ app.post("/signup", async (req, res) => {
        const name = firstName + " " + lastName;
        const saltRounds = 8 ;
        const hashedPassword = await bcrypt.hash(password, saltRounds);
-       const user = new User({ name, email, password : hashedPassword });
+       const user = new User({ name, email, password : hashedPassword, phoneNo: phone });
        await user.save();
 
       return res.status(200).json({ message: 'Signup successful, email sent' });
@@ -118,38 +119,46 @@ app.get("/menu", (req, res) => {
 });
 
 
-app.post("/add-address" , (req,res) =>
-{
-  const {type, title, address, city, pincode, landmark, isDefault, user} = req.body ; 
-  if(!type ||!title ||!address ||!city ||!pincode ||!landmark || !user)
-  {
-    return res.status(400).json({error : "All fields are required"}) ;
-  }
-  const userExists = User.findById(user) ;
-  if(!userExists)
-  {
-    return res.status(400).json({error : "User does not exist"}) ;  // Check if user exists before creating new address
-  }
+app.post("/add-address", async (req, res) => {
+  try {
+    const { type, title, address, city, pincode, landmark, user } = req.body;
 
-  const newAddress = Address.create(
-    {
+    // console.log(req.body);
+
+    if (!type || !title || !address || !city || !pincode || !landmark || !user) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Ensure pincode is a number
+    const parsedPincode = parseInt(pincode.toString().replace(/[^\d]/g, ''), 10);
+    if (isNaN(parsedPincode)) {
+      return res.status(400).json({ error: "Pincode must be a valid number" });
+    }
+
+
+    const userExists = await User.findOne({email: user});
+    if (!userExists) {
+      return res.status(400).json({ error: "User does not exist" });
+    }
+
+    const newAddress = new Address({
       type,
       title,
       address,
       city,
-      pincode,
+      pincode: parsedPincode,
       landmark,
-      isDefault, 
-      user, 
-    }
-  )
-  newAddress.save()
- .then(address => res.json(address))
- .catch(err =>
-   res.status(500).json({ error: "Failed to add address" })
-  )
-}
-)
+      user
+    });
+
+    const saved = await newAddress.save();
+    res.json(saved);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to add address" });
+  }
+});
+
 
 // GET /address?user=prantiksanki@gmail.com
 app.get("/address", async (req, res) => {

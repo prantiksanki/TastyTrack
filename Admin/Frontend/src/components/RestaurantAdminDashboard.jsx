@@ -50,9 +50,13 @@ const RestaurantAdminDashboard = () => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  
-  // Fetch initial data
+    
+  // Fetch initial data 
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsLoading(true);
@@ -71,7 +75,8 @@ const RestaurantAdminDashboard = () => {
         setMenuItems(menuData);
 
         // Fetch customers
-        const customersResponse = await fetch('http://localhost:81/customers');
+      
+        const customersResponse = await fetch('http://localhost:81/customersDetails');
         if (!customersResponse.ok) throw new Error('Failed to fetch customers');
         const customersData = await customersResponse.json();
         setCustomers(customersData);
@@ -119,6 +124,8 @@ const RestaurantAdminDashboard = () => {
             const existingIds = new Set(prev.map(order => order._id));
             const uniqueNewOrders = newOrders.filter(order => !existingIds.has(order._id));
             return [...prev, ...uniqueNewOrders];
+              //  return [...uniqueNewOrders];
+
           });
           setNewOrderCount((prev) => prev + newOrders.length);
         }
@@ -137,44 +144,89 @@ const RestaurantAdminDashboard = () => {
   const pendingOrders = orders.filter((order) => order.isActive);
   const deliveredOrders = orders.filter((order) => !order.isActive);
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+
+
+const updateOrderStatus = async (orderId, newStatus) => {
+  const order = orders.find((o) => o._id === orderId);
+  if (!order) return;
+
+  setConfirmMessage(`Are you sure you want to change order ${orderId} status to ${newStatus === 'pending' ? 'Pending' : 'Delivered'}?`);
+  setConfirmAction(() => async () => {
+    setIsUpdating(true);
     try {
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId ? { ...order, isActive: newStatus === 'pending' } : order
+        )
+      );
       const response = await fetch(`http://localhost:81/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus === 'pending' }),
       });
-      if (!response.ok) throw new Error('Failed to update order status');
-      setOrders(
-        orders.map((order) =>
-          order._id === orderId ? { ...order, isActive: newStatus === 'pending' } : order
-        )
-      );
+      if (!response.ok) {
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === orderId ? { ...order, isActive: order.isActive } : order
+          )
+        );
+        throw new Error('Failed to update order status');
+      }
+      console.log('API response:', await response.json());
+      setShowConfirmModal(false);
     } catch (err) {
       setError(err.message);
       console.error('Error updating order status:', err);
+      setShowConfirmModal(false);
+    } finally {
+      setIsUpdating(false);
     }
-  };
+  });
+  setShowConfirmModal(true);
+};
 
-  const togglePaymentStatus = async (orderId) => {
+
+
+const togglePaymentStatus = async (orderId) => {
+  const order = orders.find((o) => o._id === orderId);
+  if (!order) return;
+
+  const newStatus = !order.isPaid ? 'Paid' : 'Unpaid';
+  setConfirmMessage(`Are you sure you want to mark order ${orderId} as ${newStatus}?`);
+  setConfirmAction(() => async () => {
     try {
-      const order = orders.find((o) => o._id === orderId);
+      // Optimistic UI update
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId ? { ...order, isPaid: !order.isPaid } : order
+        )
+      );
+
       const response = await fetch(`http://localhost:81/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPaid: !order.isPaid }),
       });
-      if (!response.ok) throw new Error('Failed to update payment status');
-      setOrders(
-        orders.map((order) =>
-          order._id === orderId ? { ...order, isPaid: !order.isPaid } : order
-        )
-      );
+      if (!response.ok) {
+        // Revert optimistic update on failure
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === orderId ? { ...order, isPaid: order.isPaid } : order
+          )
+        );
+        throw new Error('Failed to update payment status');
+      }
+      setShowConfirmModal(false);
     } catch (err) {
       setError(err.message);
       console.error('Error updating payment status:', err);
+      setShowConfirmModal(false);
     }
-  };
+  });
+  setShowConfirmModal(true);
+};
+
+
 
   const toggleItemAvailability = async (itemId) => {
     try {
@@ -203,6 +255,8 @@ const RestaurantAdminDashboard = () => {
         price: parseFloat(itemData.price) || 0,
         available: itemData.available === true || itemData.available === 'on',
       };
+      console.log(itemData); 
+      console.log(editingItem); 
 
       if (editingItem) {
         const response = await fetch(`http://localhost:81/menu/${editingItem._id}`, {
@@ -334,86 +388,144 @@ const RestaurantAdminDashboard = () => {
   //   </button>
   // );
 
-  const OrderCard = ({ order }) => (
-    <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <h3 className="font-bold text-gray-800">Order ID: {order._id}</h3>
-          <p className="text-sm text-gray-600">{order.user}</p>
-          <p className="text-sm text-gray-500">{order.selectedAddress?.address}</p>
-          <p className="text-sm text-gray-500">{order.selectedAddress?.pincode}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-red-500">₹{order.total}</p>
-          <span
-            className={`px-2 py-1 rounded-full text-xs ${
-              order.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-            }`}
-          >
-            {order.isActive ? 'Pending' : 'Delivered'}
-          </span>
-        </div>
-      </div>
-
-      <div className="mb-3 space-y-2">
-        {order.cartItems.map((item, idx) => (
-          <div key={idx} className="flex justify-between pb-1 text-sm border-b">
-            <p>
-              {item.name} x{item.quantity}
-            </p>
-            <p>₹{item.price * item.quantity}</p>
-          </div>
-        ))}
-      </div>
-      {order.orderNote && (
-        <div className="mb-3">
-          <p className="text-sm text-gray-600">
-            <strong>Note:</strong> {order.orderNote}
-          </p>
-        </div>
-      )}
-      {order.promoCode && (
-        <div className="mb-3">
-          <p className="text-sm text-gray-600">
-            <strong>Promo Code:</strong> {order.promoCode}
-          </p>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2 mt-3">
+  const ConfirmationModal = ({ message, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="w-full max-w-md p-6 bg-white rounded-lg">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Confirm Action</h2>
         <button
-          onClick={() => {
-            setSelectedOrder(order);
-            setShowOrderModal(true);
-          }}
-          className="flex-1 px-3 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
-          aria-label={`View details for order ${order._id}`}
+          onClick={onCancel}
+          className="text-gray-500 hover:text-gray-700"
+          aria-label="Close confirmation modal"
         >
-          View Details
+          <X size={24} />
         </button>
-
-        {order.isActive && (
-          <button
-            onClick={() => updateOrderStatus(order._id, 'delivered')}
-            className="flex-1 px-3 py-2 text-sm text-white bg-green-500 rounded hover:bg-green-600"
-            aria-label={`Mark order ${order._id} as delivered`}
-          >
-            Mark Delivered
-          </button>
-        )}
-
+      </div>
+      <p className="mb-6 text-gray-600">{message}</p>
+      <div className="flex gap-2">
         <button
-          onClick={() => togglePaymentStatus(order._id)}
-          className={`px-3 py-2 rounded text-sm ${
-            order.isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}
-          aria-label={`Toggle payment status for order ${order._id}`}
+          onClick={onCancel}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          aria-label="Cancel action"
         >
-          {order.isPaid ? 'Paid' : 'Unpaid'}
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+          aria-label="Confirm action"
+        >
+          Confirm
         </button>
       </div>
     </div>
-  );
+  </div>
+);
+
+// {showConfirmModal && (
+//   <ConfirmationModal
+//     message={confirmMessage}
+//     onConfirm={() => {
+//       if (confirmAction) confirmAction();
+//       setShowConfirmModal(false);
+//     }}
+//     onCancel={() => {
+//       setShowConfirmModal(false);
+//       setConfirmAction(null);
+//     }}
+//   />
+// )}
+
+
+
+
+const OrderCard = ({ order }) => (
+  <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="flex items-start justify-between mb-3">
+      <div>
+        <h3 className="font-bold text-gray-800">Order ID: {order._id}</h3>
+        <p className="text-sm text-gray-500">{order.selectedAddress?.title}</p>
+        <p className="text-sm text-gray-600">{order.user}</p>
+        <p className="text-sm text-gray-500">{order.selectedAddress?.address}</p>
+        <p className="text-sm text-gray-500">{order.selectedAddress?.pincode}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-lg font-bold text-red-500">₹{order.total}</p>
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${
+            order.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+          }`}
+        >
+          {order.isActive ? 'Pending' : 'Delivered'}
+        </span>
+      </div>
+    </div>
+
+    <div className="mb-3 space-y-2">
+      {order.cartItems.map((item, idx) => (
+        <div key={idx} className="flex justify-between pb-1 text-sm border-b">
+          <p>
+            {item.name} x{item.quantity}
+          </p>
+          <p>₹{item.price * item.quantity}</p>
+        </div>
+      ))}
+    </div>
+    {order.orderNote && (
+      <div className="mb-3">
+        <p className="text-sm text-gray-600">
+          <strong>Note:</strong> {order.orderNote}
+        </p>
+      </div>
+    )}
+    {order.promoCode && (
+      <div className="mb-3">
+        <p className="text-sm text-gray-600">
+          <strong>Promo Code:</strong> {order.promoCode}
+        </p>
+      </div>
+    )}
+
+    <div className="flex flex-wrap gap-2 mt-3">
+      <button
+        onClick={() => {
+          setSelectedOrder(order);
+          setShowOrderModal(true);
+        }}
+        className="flex-1 px-3 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+        aria-label={`View details for order ${order._id}`}
+      >
+        View Details
+      </button>
+
+      {order.isActive && (
+        <button
+          onClick={() => updateOrderStatus(order._id, 'delivered')}
+          disabled={isUpdating}
+          className={`flex-1 px-3 py-2 text-sm text-white bg-green-500 rounded hover:bg-green-600 ${
+            isUpdating ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          aria-label={`Mark order ${order._id} as delivered`}
+        >
+          Mark Delivered
+        </button>
+      )}
+
+      <button
+        onClick={() => togglePaymentStatus(order._id)}
+        disabled={isUpdating}
+        className={`px-3 py-2 rounded text-sm ${
+          order.isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+        aria-label={`Toggle payment status for order ${order._id}`}
+      >
+        {order.isPaid ? 'Paid' : 'Unpaid'}
+      </button>
+    </div>
+  </div>
+);
+
+
 
   const ItemModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -711,7 +823,53 @@ const RestaurantAdminDashboard = () => {
     );
   };
 
-  const PaymentModal = () => (
+
+
+  
+const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.target);
+    const paymentData = {
+      customer: formData.get('customer'),
+      amount:
+        parseFloat(formData.get('amount')) * (formData.get('type') === 'debit' ? -1 : 1),
+      type: formData.get('type'),
+      status: formData.get('status'),
+      notes: formData.get('notes'),
+    };
+
+    try {
+      const response = await fetch('http://localhost:81/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add payment entry');
+      }
+
+      // Fetch updated payments list after successful add
+      const paymentsResponse = await fetch('http://localhost:81/payments');
+      if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
+      const paymentsData = await paymentsResponse.json();
+
+      setPayments(paymentsData);
+      setShowPaymentModal(false);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error submitting payment:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md p-6 bg-white rounded-lg">
         <div className="flex items-center justify-between mb-4">
@@ -720,25 +878,13 @@ const RestaurantAdminDashboard = () => {
             onClick={() => setShowPaymentModal(false)}
             className="text-gray-500 hover:text-gray-700"
             aria-label="Close payment modal"
+            disabled={isSubmitting}
           >
             <X size={24} />
           </button>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            addPayment({
-              customer: formData.get('customer'),
-              amount:
-                parseFloat(formData.get('amount')) * (formData.get('type') === 'debit' ? -1 : 1),
-              type: formData.get('type'),
-              status: formData.get('status'),
-              notes: formData.get('notes'),
-            });
-          }}
-        >
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="block mb-1 text-sm font-medium" htmlFor="payment-customer">
@@ -750,6 +896,7 @@ const RestaurantAdminDashboard = () => {
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div>
@@ -763,6 +910,7 @@ const RestaurantAdminDashboard = () => {
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div>
@@ -773,9 +921,10 @@ const RestaurantAdminDashboard = () => {
                 id="payment-type"
                 name="type"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                disabled={isSubmitting}
               >
-                <option value="credit">Credit (Received)</option>
-                <option value="debit">Debit (Given)</option>
+                <option value="credit">Credit (Receive)</option>
+                <option value="debit">Debit (Give)</option>
               </select>
             </div>
             <div>
@@ -786,6 +935,7 @@ const RestaurantAdminDashboard = () => {
                 id="payment-status"
                 name="status"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                disabled={isSubmitting}
               >
                 <option value="completed">Completed</option>
                 <option value="pending">Pending</option>
@@ -800,6 +950,7 @@ const RestaurantAdminDashboard = () => {
                 name="notes"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 rows="3"
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -810,6 +961,7 @@ const RestaurantAdminDashboard = () => {
               onClick={() => setShowPaymentModal(false)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               aria-label="Cancel payment entry"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
@@ -817,14 +969,17 @@ const RestaurantAdminDashboard = () => {
               type="submit"
               className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
               aria-label="Add payment entry"
+              disabled={isSubmitting}
             >
-              Add Entry
+              {isSubmitting ? 'Adding...' : 'Add Entry'}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+};
+
 
   const filteredCustomers = customers.filter(
     (customer) =>
@@ -832,7 +987,12 @@ const RestaurantAdminDashboard = () => {
       customer.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+
+  
+
   return (
+
+    
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b shadow-sm">
@@ -964,6 +1124,20 @@ const RestaurantAdminDashboard = () => {
                 </div>
               </div>
             )}
+
+
+            {showConfirmModal && (
+                <ConfirmationModal
+                  message={confirmMessage}
+                  onConfirm={() => {
+                    confirmAction();
+                    setShowConfirmModal(false);
+                  }}
+                  onCancel={() => setShowConfirmModal(false)}
+                />
+              )}
+
+
 
             {activeTab === 'orders' && (
               <div className="space-y-6">
@@ -1652,8 +1826,15 @@ const RestaurantAdminDashboard = () => {
 
       {showItemModal && <ItemModal />}
       {showCouponModal && <CouponModal />}
-      {showPaymentModal && <PaymentModal />}
+      {showPaymentModal && <PaymentModal
+                            setShowPaymentModal={setShowPaymentModal}
+                            setPayments={setPayments}
+                            setError={setError}
+                          />
+}
     </div>
+
+    
   );
 };
 

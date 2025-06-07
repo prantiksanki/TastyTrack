@@ -12,8 +12,8 @@ const paymentSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['credit', 'debit'],
-    default: 'credit',
-    // required: true,
+    // default: 'credit',
+    required: true,
 
   },
   status: {

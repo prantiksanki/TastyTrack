@@ -19,7 +19,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
-  // State declarations moved to the top
+  // State declarations
   const [cartItems, setCartItems] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -31,7 +31,6 @@ const Cart = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [orderPlacing, setOrderPlacing] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
-  const [newAddressSet, setNewAddressSet] = useState(false); 
   const [validPromoCodes, setValidPromoCodes] = useState({});
   const [newAddress, setNewAddress] = useState({
     type: 'home',
@@ -99,65 +98,35 @@ const Cart = () => {
 
   // Fetch promo codes
   useEffect(() => {
-  const fetchPromoCodes = async () => {
-    try {
-      const response = await fetch('http://localhost:80/coupons', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
+    const fetchPromoCodes = async () => {
+      try {
+        const response = await fetch('http://localhost:80/coupons', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const data = await response.json();
 
-      const formattedCodes = {};
-      data.forEach(coupon => {
-        formattedCodes[coupon.code.toUpperCase()] = {
-          discount: coupon.discount,
-          type: coupon.type,
-          minOrder: coupon.minOrder || 0,
-          active: coupon.active
-        };
-      });
+        const formattedCodes = {};
+        data.forEach(coupon => {
+          formattedCodes[coupon.code.toUpperCase()] = {
+            discount: coupon.discount,
+            type: coupon.type,
+            minOrder: coupon.minOrder || 0,
+            active: coupon.active
+          };
+        });
 
-      setValidPromoCodes(formattedCodes);
-    } catch (error) {
-      console.error('Error fetching promo codes:', error);
-    }
-  };
-
-  fetchPromoCodes();
-}, []);
-
-  // Add new address
-  useEffect(() => {
-    if (!newAddressSet) return;
-
-    const addressData = {
-      user: localStorage.getItem("email"),
-      ...newAddress
+        setValidPromoCodes(formattedCodes);
+      } catch (error) {
+        console.error('Error fetching promo codes:', error);
+      }
     };
 
-    fetch('http://localhost:80/add-address', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(addressData)
-    })
-      .then(response => response.json())
-      .then(data => {
-        console.log("Address added:", data);
-        setSavedAddresses(prev => [...prev, data]);
-        if (!selectedAddress) setSelectedAddress(data);
-        setNewAddressSet(false);
-      })
-      .catch(error => {
-        console.error("Error adding address:", error);
-        setNewAddressSet(false);
-      });
-  }, [newAddressSet, newAddress, selectedAddress]);
+    fetchPromoCodes();
+  }, []);
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity === 0) {
@@ -176,71 +145,102 @@ const Cart = () => {
   };
 
   const applyPromoCode = () => {
-  const code = promoCode.toUpperCase();
-  const promo = validPromoCodes[code];
+    const code = promoCode.toUpperCase();
+    const promo = validPromoCodes[code];
 
-  if (promo) {
-    if (subtotal >= promo.minOrder) {
-      setAppliedPromo({
-        code,
-        ...promo
-      });
-      setPromoCode('');
+    if (promo) {
+      if (subtotal >= promo.minOrder) {
+        setAppliedPromo({
+          code,
+          ...promo
+        });
+        setPromoCode('');
+      } else {
+        alert(`Minimum order amount ₹${promo.minOrder || 0} required to use this promo code.`);
+      }
     } else {
-      alert(`Minimum order amount ₹${promo.minOrder || 0} required to use this promo code.`);
+      alert('Invalid promo code');
     }
-  } else {
-    alert('Invalid promo code');
+  };
+
+  const removePromoCode = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+  };
+
+  const addNewAddress = async () => {
+    // Validate required fields
+    if (!newAddress.title || !newAddress.address || !newAddress.pincode) {
+      alert('Please fill all required fields');
+      return;
+    }
+
+    const addressData = {
+      user: localStorage.getItem("email"),
+      ...newAddress
+    };
+
+    console.log("New address data:", addressData);
+
+    try {
+      const response = await fetch('http://localhost:80/add-address', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(addressData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`Failed to add address: ${errorData.message || response.statusText}`);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Address added:", data);
+      setSavedAddresses(prev => [...prev, data]);
+      if (!selectedAddress) setSelectedAddress(data);
+      
+      // Reset the form and close the modal
+      setShowAddAddressModal(false);
+      setNewAddress({
+        type: 'home',
+        title: '',
+        address: '',
+        city: 'Kolkata',
+        pincode: '',
+        landmark: ''
+      });
+    } catch (error) {
+      console.error("Error adding address:", error);
+      alert('An error occurred while adding the address. Please try again.');
+    }
+  };
+
+  const handleCart = () => {
+    window.location.reload();
+  };
+
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = subtotal > 0 ? 0 : 40;
+  const platformFee = 0;
+  const gst = 0;
+
+  let discount = 0;
+  if (appliedPromo) {
+    if (subtotal >= appliedPromo.minOrder) {
+      discount = appliedPromo.type === 'percentage'
+        ? Math.round(subtotal * appliedPromo.discount / 100)
+        : appliedPromo.discount;
+    } else {
+      alert(`Order value dropped below ₹${appliedPromo.minOrder}. Promo code removed.`);
+      removePromoCode();
+    }
   }
-};
 
-const removePromoCode = () => {
-  setAppliedPromo(null);
-  setPromoCode('');
-};
-
-const addNewAddress = () => {
-  if (!newAddress.title || !newAddress.address || !newAddress.pincode) {
-    alert('Please fill all required fields');
-    return;
-  }
-
-  setNewAddressSet(true);
-  setShowAddAddressModal(false);
-  setNewAddress({
-    type: 'home',
-    title: '',
-    address: '',
-    city: 'Kolkata',
-    pincode: '',
-    landmark: ''
-  });
-};
-
-const handleCart = () => {
-  window.location.reload();
-};
-
-const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-const deliveryFee = subtotal > 0 ? 0 : 40;
-const platformFee = 0;
-const gst = 0;
-
-let discount = 0;
-if (appliedPromo) {
-  if (subtotal >= appliedPromo.minOrder) {
-    discount = appliedPromo.type === 'percentage'
-      ? Math.round(subtotal * appliedPromo.discount / 100)
-      : appliedPromo.discount;
-  } else {
-    // If subtotal drops below minOrder after promo applied, remove it
-    alert(`Order value dropped below ₹${appliedPromo.minOrder}. Promo code removed.`);
-    removePromoCode();
-  }
-}
-
-const total = subtotal + deliveryFee + platformFee + gst - discount;
-
+  const total = subtotal + deliveryFee + platformFee + gst - discount;
 
   const placeOrder = async () => {
     if (!selectedAddress) {

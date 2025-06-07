@@ -164,7 +164,7 @@ app.post('/menu', async (req, res) => {
 });
 
 // Update Menu Item by ID
-app.patch('/menu/:id', async (req, res) => {
+app.put('/menu/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateFields = req.body;
@@ -270,6 +270,7 @@ app.delete('/coupons/:id', async (req, res) => {
 app.post('/payments', async (req, res) => {
   try {
     const newPayment = new Payment(req.body);
+    console.log('Creating Payment:', newPayment);
     await newPayment.save();
     res.status(201).json({ message: 'Payment created', item: newPayment });
   } catch (error) {
@@ -278,17 +279,65 @@ app.post('/payments', async (req, res) => {
 });
 
 
-app.get("/payments" , async (req,res)=>
-{
+app.get("/payments", async (req, res) => {
   try {
     const payments = await Payment.find();
+    const orders = await Order.find();
+
+    orders.forEach(order => {
+      payments.push({
+        _id: order._id,
+        customer: order.user,
+        amount: order.total,
+        status: order.isPaid ? "completed" : "pending",
+        type: "credit",
+        date: order.createdAt.toISOString().split('T')[0],
+      });
+    });
+
     res.json(payments);
   } catch (err) {
     res.status(500).json({ message: "Error fetching payments", error: err.message });
   }
-}
+});
 
-)
+
+
+app.get("/customersDetails", async (req, res) => {
+  try {
+    const customers = await User.find();
+
+    const customersWithOrders = await Promise.all(
+      customers.map(async (customer) => {
+        const orders = await Order.find({ user: customer.email });
+        // console.log(orders); // <== This will now work
+        const totalOrders = orders.length;
+        let totalSpent = 0 ; 
+        orders.forEach(order => totalSpent += order.total); // <== This will now work
+
+        let pendingAmount = 0 ; 
+        orders.forEach(order => pendingAmount += order.isPaid === false ? order.total : 0); // <== This will now work
+
+        return {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phoneNo, // <== This will now work
+          address: orders.length > 0 ? `${orders[0].selectedAddress.address}, ${orders[0].selectedAddress.city}`  : "", 
+          totalOrders,
+          totalSpent,
+          pendingAmount,
+        };
+      })
+    );
+
+    res.json(customersWithOrders);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching customers", error: err.message });
+  }
+});
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
