@@ -9,6 +9,7 @@ const Menu = require("./models/menu") ;
 const Address = require("./models/address") ; 
 const Cart = require("./models/cart") ; 
 const Order = require("./models/order") ; 
+const Coupon = require("./models/coupon") ; 
 
 
 dotenv.config();
@@ -20,7 +21,7 @@ app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
 app.use(cors({
-  origin: 'http://localhost:5174', // Replace with your frontend origin
+  origin: 'http://localhost:5173', // Replace with your frontend origin
   credentials: true
 }));
 
@@ -249,6 +250,17 @@ app.post("/order" , async (req,res) =>
     .finally(() => console.log("Server is running on port 80"))
 
 })
+
+
+
+app.get('/coupons', async (req, res) => {
+  try {
+   const coupons = await Coupon.find();
+   res.json(coupons);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating coupon', error: error.message });
+  }
+});
 
 
 

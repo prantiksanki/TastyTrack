@@ -43,61 +43,96 @@ const RestaurantAdminDashboard = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch today's orders
+  
+  // Fetch initial data
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchInitialData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('http://localhost:81/orders/today');
-        if (!response.ok) {
-          throw new Error('Failed to fetch orders');
-        }
-        const data = await response.json();
-        setOrders(data);
-        setNewOrderCount(data.length);
+        // Fetch orders
+        const ordersResponse = await fetch('http://localhost:81/orders/today');
+        if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
+        const ordersData = await ordersResponse.json();
+        setOrders(ordersData);
+        setNewOrderCount(ordersData.length);
+
+        // Fetch menu items
+        const menuResponse = await fetch('http://localhost:81/menu');
+        if (!menuResponse.ok) throw new Error('Failed to fetch menu items');
+        const menuData = await menuResponse.json();
+        setMenuItems(menuData);
+
+        // Fetch customers
+        const customersResponse = await fetch('http://localhost:81/customers');
+        if (!customersResponse.ok) throw new Error('Failed to fetch customers');
+        const customersData = await customersResponse.json();
+        setCustomers(customersData);
+
+        // Fetch coupons
+        const couponsResponse = await fetch('http://localhost:81/coupons');
+        if (!couponsResponse.ok) throw new Error('Failed to fetch coupons');
+        const couponsData = await couponsResponse.json();
+        setCoupons(couponsData);
+
+        // Fetch payments
+        const paymentsResponse = await fetch('http://localhost:81/payments');
+        if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
+        const paymentsData = await paymentsResponse.json();
+        setPayments(paymentsData);
       } catch (err) {
         setError(err.message);
-        console.error('Error fetching orders:', err);
+        console.error('Error fetching initial data:', err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchOrders();
+
+    fetchInitialData();
   }, []);
 
-  // Simulate new order notifications (replace with API call if available)
+  // Clear error after 5 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.8) {
-        setNewOrderCount((prev) => prev + 1);
-      }
-      // Optional: Fetch new orders from a hypothetical endpoint
-      
-      const fetchNewOrders = async () => {
-        try {
-          const response = await fetch('http://localhost:81/orders/new');
-          const newOrders = await response.json();
-          setOrders((prev) => [...newOrders]);
-          // setOrders((prev) => [...prev, ...newOrders]);
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
+  // Poll for new orders
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('http://localhost:81/orders/new');
+        if (!response.ok) throw new Error('Failed to fetch new orders');
+        const newOrders = await response.json();
+        if (newOrders.length > 0) {
+          setOrders((prev) => {
+            // Avoid duplicates by checking existing order IDs
+            const existingIds = new Set(prev.map(order => order._id));
+            const uniqueNewOrders = newOrders.filter(order => !existingIds.has(order._id));
+            return [...prev, ...uniqueNewOrders];
+          });
           setNewOrderCount((prev) => prev + newOrders.length);
-        } catch (err) {
-          console.error('Error fetching new orders:', err);
         }
-      };
-      fetchNewOrders();
+      } catch (err) {
+        console.error('Error fetching new orders:', err);
+      }
     }, 10000);
+
     return () => clearInterval(interval);
   }, []);
 
   const todayOrders = orders.filter(
     (order) => new Date(order.createdAt).toDateString() === new Date().toDateString()
   );
-
   const todayTotal = todayOrders.reduce((sum, order) => sum + order.total, 0);
   const pendingOrders = orders.filter((order) => order.isActive);
   const deliveredOrders = orders.filter((order) => !order.isActive);
@@ -109,9 +144,7 @@ const RestaurantAdminDashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus === 'pending' }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
+      if (!response.ok) throw new Error('Failed to update order status');
       setOrders(
         orders.map((order) =>
           order._id === orderId ? { ...order, isActive: newStatus === 'pending' } : order
@@ -123,8 +156,6 @@ const RestaurantAdminDashboard = () => {
     }
   };
 
-
-
   const togglePaymentStatus = async (orderId) => {
     try {
       const order = orders.find((o) => o._id === orderId);
@@ -133,9 +164,7 @@ const RestaurantAdminDashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPaid: !order.isPaid }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to update payment status');
-      }
+      if (!response.ok) throw new Error('Failed to update payment status');
       setOrders(
         orders.map((order) =>
           order._id === orderId ? { ...order, isPaid: !order.isPaid } : order
@@ -147,144 +176,163 @@ const RestaurantAdminDashboard = () => {
     }
   };
 
-  const toggleItemAvailability = (itemId) => {
-    setMenuItems(
-      menuItems.map((item) =>
-        item.id === itemId ? { ...item, available: !item.available } : item
-      )
-    );
-  };
-
-  const addOrUpdateItem = (itemData) => {
-    if (editingItem) {
+  const toggleItemAvailability = async (itemId) => {
+    try {
+      const item = menuItems.find((i) => i._id === itemId);
+      const response = await fetch(`http://localhost:81/menu/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ available: !item.available }),
+      });
+      if (!response.ok) throw new Error('Failed to update item availability');
       setMenuItems(
-        menuItems.map((item) => (item.id === editingItem.id ? { ...item, ...itemData } : item))
-      );
-    } else {
-      const newItem = { ...itemData, id: Date.now() };
-      setMenuItems([...menuItems, newItem]);
-    }
-    setShowItemModal(false);
-    setEditingItem(null);
-  };
-
-  const deleteItem = (itemId) => {
-    setMenuItems(menuItems.filter((item) => item.id !== itemId));
-  };
-
-  const addOrUpdateCoupon = (couponData) => {
-    if (editingCoupon) {
-      setCoupons(
-        coupons.map((coupon) =>
-          coupon.id === editingCoupon.id ? { ...coupon, ...couponData } : coupon
+        menuItems.map((item) =>
+          item._id === itemId ? { ...item, available: !item.available } : item
         )
       );
-    } else {
-      const newCoupon = { ...couponData, id: Date.now() };
-      setCoupons([...coupons, newCoupon]);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating item availability:', err);
     }
-    setShowCouponModal(false);
-    setEditingCoupon(null);
   };
 
-  const deleteCoupon = (couponId) => {
-    setCoupons(coupons.filter((coupon) => coupon.id !== couponId));
+  const addOrUpdateItem = async (itemData) => {
+    try {
+      const formattedItemData = {
+        ...itemData,
+        price: parseFloat(itemData.price) || 0,
+        available: itemData.available === true || itemData.available === 'on',
+      };
+
+      if (editingItem) {
+        const response = await fetch(`http://localhost:81/menu/${editingItem._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formattedItemData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to update menu item: ${errorData.message || response.statusText}`);
+        }
+
+        const updatedItem = await response.json();
+        setMenuItems(
+          menuItems.map((item) =>
+            item._id === editingItem._id ? { ...item, ...updatedItem } : item
+          )
+        );
+      } else {
+        const response = await fetch('http://localhost:81/menu', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formattedItemData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to add menu item: ${errorData.message || response.statusText}`);
+        }
+
+        const newItem = await response.json();
+        setMenuItems([...menuItems, newItem]);
+      }
+
+      setShowItemModal(false);
+      setEditingItem(null);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error adding/updating menu item:', err);
+    }
   };
 
-  const addPayment = (paymentData) => {
-    const newPayment = { ...paymentData, id: Date.now(), date: new Date().toISOString() };
-    setPayments([...payments, newPayment]);
-    setShowPaymentModal(false);
+  const deleteItem = async (itemId) => {
+    try {
+      const response = await fetch(`http://localhost:81/menu/${itemId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete menu item');
+      setMenuItems(menuItems.filter((item) => item._id !== itemId));
+    } catch (err) {
+      setError(err.message);
+      console.error('Error deleting menu item:', err);
+    }
   };
-
-  // Hardcoded data (replace with API calls if available)
-  const [menuItems, setMenuItems] = useState([
-    { id: 1, name: 'Margherita Pizza', price: 299, category: 'Pizza', available: true },
-    { id: 2, name: 'Chicken Biryani', price: 249, category: 'Biryani', available: true },
-    { id: 3, name: 'Garlic Bread', price: 99, category: 'Sides', available: false },
-    { id: 4, name: 'Raita', price: 49, category: 'Sides', available: true },
-  ]);
-
-  const [customers, setCustomers] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+91 98765 43210',
-      address: '123 Main St, City',
-      totalOrders: 15,
-      pendingAmount: 0,
-      totalSpent: 4500,
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+91 87654 32109',
-      address: '456 Oak Ave, City',
-      totalOrders: 8,
-      pendingAmount: 298,
-      totalSpent: 2100,
-    },
-    {
-      id: 3,
-      name: 'Kumkum',
-      email: 'kumkum@gmail.com',
-      phone: '+91 98765 43211',
-      address: 'Ghatal, West Bengal, India',
-      totalOrders: 1,
-      pendingAmount: 711,
-      totalSpent: 711,
-    },
-  ]);
-
-  const [coupons, setCoupons] = useState([
-    { id: 1, code: 'SAVE20', discount: 20, type: 'percentage', active: true, minOrder: 200 },
-    { id: 2, code: 'FLAT50', discount: 50, type: 'fixed', active: true, minOrder: 300 },
-    { id: 3, code: 'NEWUSER', discount: 10, type: 'percentage', active: true, minOrder: 500 },
-  ]);
-
-  const [payments, setPayments] = useState([
-    {
-      id: 1,
-      customer: 'john@example.com',
-      amount: 697,
-      date: new Date().toISOString(),
-      type: 'credit',
-      status: 'completed',
-    },
-    {
-      id: 2,
-      customer: 'jane@example.com',
-      amount: -298,
-      date: new Date().toISOString(),
-      type: 'debit',
-      status: 'pending',
-    },
-  ]);
-
-  const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const TabButton = ({ id, icon: Icon, label, badge }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors relative ${
-        activeTab === id ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-      }`}
-      aria-current={activeTab === id ? 'page' : undefined}
-    >
-      <Icon size={20} />
-      <span className="font-medium">{label}</span>
-      {badge > 0 && (
-        <span className="absolute px-2 py-1 text-xs bg-yellow-400 rounded-full -top-2 -right-2">
-          {badge}
-        </span>
-      )}
-    </button>
-  );
+  <button
+    onClick={() => setActiveTab(id)}
+    className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors relative ${
+      activeTab === id ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+    }`}
+    aria-current={activeTab === id ? 'page' : undefined}
+  >
+    <Icon size={20} />
+    <span className="font-medium">{label}</span>
+    {badge > 0 && (
+      <span className="absolute px-2 py-1 text-xs bg-yellow-400 rounded-full -top-2 -right-2">
+        {badge}
+      </span>
+    )}
+  </button>
+);
+
+  const addOrUpdateCoupon = async (couponData) => {
+    try {
+      const formattedCouponData = {
+        ...couponData,
+        discount: parseInt(couponData.discount) || 0,
+        minOrder: parseInt(couponData.minOrder) || 0,
+      };
+
+      if (editingCoupon) {
+        const response = await fetch(`http://localhost:81/coupons/${editingCoupon.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formattedCouponData),
+        });
+        if (!response.ok) throw new Error('Failed to update coupon');
+        const updatedCoupon = await response.json();
+        setCoupons(
+          coupons.map((coupon) =>
+            coupon.id === editingCoupon.id ? { ...coupon, ...updatedCoupon } : coupon
+          )
+        );
+      } else {
+        const response = await fetch('http://localhost:81/coupons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...formattedCouponData, id: Date.now() }),
+        });
+        if (!response.ok) throw new Error('Failed to add coupon');
+        const newCoupon = await response.json();
+        setCoupons([...coupons, newCoupon]);
+      }
+      setShowCouponModal(false);
+      setEditingCoupon(null);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error adding/updating coupon:', err);
+    }
+  };
+
+  // constTButton = ({ id, icon: Icon, label, badge }) => (
+  //   <button
+  //     onClick={() => setActiveTab(id)}
+  //     className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors relative ${
+  //       activeTab === id ? 'bg-red-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+  //     }`}
+  //     aria-current={activeTab === id ? 'page' : undefined}
+  //   >
+  //     <Icon size={20} />
+  //     <span className="font-medium">{label}</span>
+  //     {badge > 0 && (
+  //       <span className="absolute px-2 py-1 text-xs bg-yellow-400 rounded-full -top-2 -right-2">
+  //         {badge}
+  //       </span>
+  //     )}
+  //   </button>
+  // );
 
   const OrderCard = ({ order }) => (
     <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -367,18 +415,18 @@ const RestaurantAdminDashboard = () => {
     </div>
   );
 
-  const CouponModal = () => (
+  const ItemModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md p-6 bg-white rounded-lg">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">{editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}</h2>
+          <h2 className="text-xl font-bold">{editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}</h2>
           <button
             onClick={() => {
-              setShowCouponModal(false);
-              setEditingCoupon(null);
+              setShowItemModal(false);
+              setEditingItem(null);
             }}
             className="text-gray-500 hover:text-gray-700"
-            aria-label="Close coupon modal"
+            aria-label="Close item modal"
           >
             <X size={24} />
           </button>
@@ -388,79 +436,91 @@ const RestaurantAdminDashboard = () => {
           onSubmit={(e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            addOrUpdateCoupon({
-              code: formData.get('code'),
-              discount: parseInt(formData.get('discount')),
-              type: formData.get('type'),
-              minOrder: parseInt(formData.get('minOrder')),
-              active: formData.get('active') === 'on',
+            addOrUpdateItem({
+              name: formData.get('name'),
+              description: formData.get('description'),
+              price: parseFloat(formData.get('price')),
+              category: formData.get('category'),
+              image: formData.get('image'),
+              available: formData.get('available') === 'on',
             });
           }}
         >
           <div className="space-y-4">
             <div>
-              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-code">
-                Coupon Code
+              <label className="block mb-1 text-sm font-medium" htmlFor="item-name">
+                Item Name
               </label>
               <input
-                id="coupon-code"
-                name="code"
+                id="item-name"
+                name="name"
                 type="text"
-                defaultValue={editingCoupon?.code || ''}
+                defaultValue={editingItem?.name || ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 required
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-discount">
-                Discount
+              <label className="block mb-1 text-sm font-medium" htmlFor="item-description">
+                Description
+              </label>
+              <textarea
+                id="item-description"
+                name="description"
+                defaultValue={editingItem?.description || ''}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                rows="3"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-medium" htmlFor="item-price">
+                Price
               </label>
               <input
-                id="coupon-discount"
-                name="discount"
+                id="item-price"
+                name="price"
                 type="number"
-                defaultValue={editingCoupon?.discount || ''}
+                step="0.01"
+                defaultValue={editingItem?.price || ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 required
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-type">
-                Type
-              </label>
-              <select
-                id="coupon-type"
-                name="type"
-                defaultValue={editingCoupon?.type || 'percentage'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed Amount</option>
-              </select>
-            </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium" htmlFor="coupon-minOrder">
-                Minimum Order
+              <label className="block mb-1 text-sm font-medium" htmlFor="item-category">
+                Category
               </label>
               <input
-                id="coupon-minOrder"
-                name="minOrder"
-                type="number"
-                defaultValue={editingCoupon?.minOrder || ''}
+                id="item-category"
+                name="category"
+                type="text"
+                defaultValue={editingItem?.category || ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 required
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-medium" htmlFor="item-image">
+                Image URL
+              </label>
+              <input
+                id="item-image"
+                name="image"
+                type="text"
+                defaultValue={editingItem?.image || ''}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               />
             </div>
             <div className="flex items-center gap-2">
               <input
-                id="coupon-active"
-                name="active"
+                id="item-available"
+                name="available"
                 type="checkbox"
-                defaultChecked={editingCoupon?.active || true}
+                defaultChecked={editingItem?.available ?? true}
                 className="w-4 h-4"
               />
-              <label className="text-sm font-medium" htmlFor="coupon-active">
-                Active
+              <label className="text-sm font-medium" htmlFor="item-available">
+                Available
               </label>
             </div>
           </div>
@@ -469,18 +529,18 @@ const RestaurantAdminDashboard = () => {
             <button
               type="button"
               onClick={() => {
-                setShowCouponModal(false);
-                setEditingCoupon(null);
+                setShowItemModal(false);
+                setEditingItem(null);
               }}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              aria-label="Cancel coupon changes"
+              aria-label="Cancel item changes"
             >
               Cancel
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
-              aria-label="Save coupon"
+              aria-label="Save item"
             >
               Save
             </button>
@@ -489,6 +549,167 @@ const RestaurantAdminDashboard = () => {
       </div>
     </div>
   );
+
+  const CouponModal = () => {
+    const [formState, setFormState] = useState({
+      code: editingCoupon?.code || '',
+      discount: editingCoupon?.discount || '',
+      type: editingCoupon?.type || 'percentage',
+      minOrder: editingCoupon?.minOrder || '',
+      active: editingCoupon?.active ?? true,
+    });
+
+    // Handle input changes
+    const handleInputChange = (e) => {
+      const { name, value, type, checked } = e.target;
+      setFormState((prev) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    };
+
+    // Handle form submission
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      addOrUpdateCoupon({
+        code: formState.code,
+        discount: parseInt(formState.discount) || 0,
+        type: formState.type,
+        minOrder: parseInt(formState.minOrder) || 0,
+        active: formState.active,
+      });
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="w-full max-w-md p-6 bg-white rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">{editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}</h2>
+            <button
+              onClick={() => {
+                setShowCouponModal(false);
+                setEditingCoupon(null);
+                setFormState({
+                  code: '',
+                  discount: '',
+                  type: 'percentage',
+                  minOrder: '',
+                  active: true,
+                });
+              }}
+              className="text-gray-500 hover:text-gray-700"
+              aria-label="Close coupon modal"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-code">
+                  Coupon Code
+                </label>
+                <input
+                  id="coupon-code"
+                  name="code"
+                  type="text"
+                  value={formState.code}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-discount">
+                  Discount
+                </label>
+                <input
+                  id="coupon-discount"
+                  name="discount"
+                  type="number"
+                  value={formState.discount}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-type">
+                  Type
+                </label>
+                <select
+                  id="coupon-type"
+                  name="type"
+                  value={formState.type}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-minOrder">
+                  Minimum Order
+                </label>
+                <input
+                  id="coupon-minOrder"
+                  name="minOrder"
+                  type="number"
+                  value={formState.minOrder}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="coupon-active"
+                  name="active"
+                  type="checkbox"
+                  checked={formState.active}
+                  onChange={handleInputChange}
+                  className="w-4 h-4"
+                />
+                <label className="text-sm font-medium" htmlFor="coupon-active">
+                  Active
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCouponModal(false);
+                  setEditingCoupon(null);
+                  setFormState({
+                    code: '',
+                    discount: '',
+                    type: 'percentage',
+                    minOrder: '',
+                    active: true,
+                  });
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                aria-label="Cancel coupon changes"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+                aria-label="Save coupon"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   const PaymentModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -605,6 +826,12 @@ const RestaurantAdminDashboard = () => {
     </div>
   );
 
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -639,13 +866,22 @@ const RestaurantAdminDashboard = () => {
 
       <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {error && (
-          <div className="p-4 mb-4 text-red-800 bg-red-100 rounded-lg">
-            <AlertCircle className="inline-block mr-2" size={20} />
-            {error}
+          <div className="flex items-center justify-between p-4 mb-4 text-red-800 bg-red-100 rounded-lg">
+            <div className="flex items-center">
+              <AlertCircle className="mr-2" size={20} />
+              {error}
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-800 hover:text-red-900"
+              aria-label="Dismiss error"
+            >
+              <X size={20} />
+            </button>
           </div>
         )}
         {isLoading && (
-          <div className="p-4 text-center text-gray-600">Loading orders...</div>
+          <div className="p-4 text-center text-gray-600">Loading...</div>
         )}
 
         <div className="flex gap-8">
@@ -794,9 +1030,19 @@ const RestaurantAdminDashboard = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {menuItems.map((item) => (
-                        <tr key={item.id}>
+                        <tr key={item._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                            <div className="flex items-center">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="object-cover w-12 h-12 mr-4 rounded"
+                              />
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                                <div className="text-sm text-gray-500">{item.description}</div>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{item.category}</div>
@@ -806,7 +1052,7 @@ const RestaurantAdminDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
-                              onClick={() => toggleItemAvailability(item.id)}
+                              onClick={() => toggleItemAvailability(item._id)}
                               className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                 item.available
                                   ? 'bg-green-100 text-green-800'
@@ -830,7 +1076,7 @@ const RestaurantAdminDashboard = () => {
                                 <Edit size={16} />
                               </button>
                               <button
-                                onClick={() => deleteItem(item.id)}
+                                onClick={() => deleteItem(item._id)}
                                 className="text-red-600 hover:text-red-900"
                                 aria-label={`Delete ${item.name}`}
                               >
@@ -939,7 +1185,6 @@ const RestaurantAdminDashboard = () => {
                   </button>
                 </div>
 
-                {/* Payment Summary Cards */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div className="p-6 bg-white rounded-lg shadow-sm">
                     <div className="flex items-center justify-between">
@@ -990,7 +1235,6 @@ const RestaurantAdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* Payment Entries */}
                 <div className="overflow-hidden bg-white rounded-lg shadow-sm">
                   <table className="w-full">
                     <thead className="bg-gray-50">
@@ -1065,7 +1309,10 @@ const RestaurantAdminDashboard = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Coupons Management</h2>
                   <button
-                    onClick={() => setShowCouponModal(true)}
+                    onClick={() => {
+                      setEditingCoupon(null);
+                      setShowCouponModal(true);
+                    }}
                     className="flex items-center gap-2 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
                     aria-label="Add new coupon"
                   >
@@ -1123,11 +1370,7 @@ const RestaurantAdminDashboard = () => {
                         </span>
                         <button
                           onClick={() => {
-                            setCoupons(
-                              coupons.map((c) =>
-                                c.id === coupon.id ? { ...c, active: !c.active } : c
-                              )
-                            );
+                            addOrUpdateCoupon({ ...coupon, active: !coupon.active });
                           }}
                           className="text-sm text-blue-600 hover:text-blue-800"
                           aria-label={`Toggle status for coupon ${coupon.code}`}
@@ -1145,7 +1388,6 @@ const RestaurantAdminDashboard = () => {
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">Reports & Analytics</h2>
 
-                {/* Monthly Report */}
                 <div className="p-6 bg-white rounded-lg shadow-sm">
                   <h3 className="mb-4 text-lg font-semibold">Monthly Report</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -1172,13 +1414,12 @@ const RestaurantAdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* Top Items */}
                 <div className="p-6 bg-white rounded-lg shadow-sm">
                   <h3 className="mb-4 text-lg font-semibold">Top Selling Items</h3>
                   <div className="space-y-3">
                     {menuItems.slice(0, 5).map((item, index) => (
                       <div
-                        key={item.id}
+                        key={item._id}
                         className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
                       >
                         <div className="flex items-center gap-3">
@@ -1203,7 +1444,6 @@ const RestaurantAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Order Modal */}
       {showOrderModal && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
@@ -1219,7 +1459,6 @@ const RestaurantAdminDashboard = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Customer Info */}
               <div className="p-4 rounded-lg bg-gray-50">
                 <h3 className="mb-2 font-semibold">Customer Information</h3>
                 <div className="space-y-2">
@@ -1253,7 +1492,6 @@ const RestaurantAdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Order Items */}
               <div>
                 <h3 className="mb-3 font-semibold">Order Items</h3>
                 <div className="space-y-2">
@@ -1273,7 +1511,6 @@ const RestaurantAdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Status & Actions */}
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block mb-2 text-sm font-medium" htmlFor="order-status">
@@ -1316,7 +1553,6 @@ const RestaurantAdminDashboard = () => {
         </div>
       )}
 
-      {/* Customer Modal */}
       {showCustomerModal && selectedCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
@@ -1332,7 +1568,6 @@ const RestaurantAdminDashboard = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Customer Info */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="p-4 rounded-lg bg-gray-50">
                   <h3 className="mb-3 font-semibold">Contact Information</h3>
@@ -1377,7 +1612,6 @@ const RestaurantAdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Orders */}
               <div>
                 <h3 className="mb-3 font-semibold">Recent Orders</h3>
                 <div className="space-y-2">
@@ -1422,6 +1656,5 @@ const RestaurantAdminDashboard = () => {
     </div>
   );
 };
-
 
 export default RestaurantAdminDashboard;

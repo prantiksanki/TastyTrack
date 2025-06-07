@@ -16,6 +16,10 @@ import {
   Mail
 } from 'lucide-react';
 import FoodCard from './FoodCard';
+import { Player } from '@lottiefiles/react-lottie-player'; // optional alternative
+import Lottie from 'lottie-react';
+import emptyAnimation from '../assets/Empty.json'; // or use a relative path if in src
+
 
 
 const MainContent = ({ foods, onAddToCart }) => {
@@ -27,13 +31,13 @@ const MainContent = ({ foods, onAddToCart }) => {
     : foods.filter(food => food.category === selectedCategory);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
       {/* Hero Section */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+      <div className="mb-12 text-center">
+        <h1 className="mb-4 text-4xl font-bold text-gray-800 md:text-5xl">
           Delicious Food, <span style={{color: '#FF4C29'}}>Delivered Fresh</span>
         </h1>
-        <p className="text-xl text-gray-600 mb-6">
+        <p className="mb-6 text-xl text-gray-600">
           Experience authentic flavors from Luckey's Kitchen, delivered right to your doorstep
         </p>
         <div className="flex items-center justify-center space-x-6 text-gray-600">
@@ -73,15 +77,30 @@ const MainContent = ({ foods, onAddToCart }) => {
       </div>
 
       {/* Food Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredFoods.map(food => (
-          <FoodCard 
-            key={food.id} 
-            food={food} 
-            onAddToCart={onAddToCart}
-          />
-        ))}
-      </div>
+  {/* Food Grid or Empty State */}
+   {filteredFoods.filter(food => food.available).length === 0 ? (
+  <div className="mt-10 text-center text-gray-500">
+    <div className="mx-auto w-72">
+      <Lottie animationData={emptyAnimation} loop autoplay />
+    </div>
+    {/* <p className="mt-4 text-lg">😔 No food items available in this category right now.</p> */}
+  </div>
+) : (
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {filteredFoods
+      .filter(food => food.available)
+      .map(food => (
+        <FoodCard 
+          key={food._id || food.id}
+          food={food}
+          onAddToCart={onAddToCart}
+        />
+    ))}
+  </div>
+)}
+
+
+
     </main>
   );
 };

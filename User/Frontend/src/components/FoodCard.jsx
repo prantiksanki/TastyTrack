@@ -1,34 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  ShoppingCart, 
-  User, 
-  LogIn, 
-  UserPlus, 
-  LogOut, 
-  Phone,
   Star,
-  Clock,
-  Truck,
-  MapPin,
-  Facebook,
-  Instagram,
-  Twitter,
-  Mail
+  Clock
 } from 'lucide-react';
 
-
 const FoodCard = ({ food, onAddToCart }) => {
+  // If not available, do not render
+  if (!food.available) return null;
+
   return (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
+    <div className="overflow-hidden transition-all duration-300 bg-white shadow-md rounded-xl hover:shadow-xl group">
       <div className="relative h-48 overflow-hidden">
         <img 
           src={food.image} 
           alt={food.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
         />
         {food.isPopular && (
           <div 
-            className="absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-semibold text-white"
+            className="absolute px-2 py-1 text-xs font-semibold text-white rounded-full top-3 left-3"
             style={{backgroundColor: '#FFD93D', color: '#333333'}}
           >
             Popular
@@ -37,7 +27,7 @@ const FoodCard = ({ food, onAddToCart }) => {
       </div>
       
       <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex items-start justify-between mb-2">
           <h3 className="text-lg font-semibold text-gray-800">{food.name}</h3>
           <div className="flex items-center space-x-1">
             <Star size={16} style={{color: '#FFD93D'}} fill="#FFD93D" />
@@ -45,10 +35,10 @@ const FoodCard = ({ food, onAddToCart }) => {
           </div>
         </div>
         
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{food.description}</p>
+        <p className="mb-3 text-sm text-gray-600 line-clamp-2">{food.description}</p>
         
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-1 text-gray-500 text-sm">
+          <div className="flex items-center space-x-1 text-sm text-gray-500">
             <Clock size={14} />
             <span>{food.time}</span>
           </div>
@@ -59,7 +49,7 @@ const FoodCard = ({ food, onAddToCart }) => {
         
         <button
           onClick={() => onAddToCart(food)}
-          className="w-full py-2 rounded-lg text-white font-semibold transition-all duration-300 hover:shadow-lg"
+          className="w-full py-2 font-semibold text-white transition-all duration-300 rounded-lg hover:shadow-lg"
           style={{backgroundColor: '#FF4C29'}}
         >
           Add to Cart
@@ -68,6 +58,5 @@ const FoodCard = ({ food, onAddToCart }) => {
     </div>
   );
 };
-
 
 export default FoodCard;

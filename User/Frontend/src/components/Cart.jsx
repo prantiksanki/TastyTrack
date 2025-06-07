@@ -6,22 +6,20 @@ import {
   Trash2, 
   MapPin, 
   Clock, 
-  Edit3, 
   CreditCard, 
   Wallet, 
   Smartphone,
   Home,
   Building,
-  User,
-  Phone,
   StickyNote,
   Tag,
   Info,
   CheckCircle
 } from 'lucide-react';
-import {useNavigate} from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
+  // State declarations moved to the top
   const [cartItems, setCartItems] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -32,34 +30,33 @@ const Cart = () => {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isLoading, setIsLoading] = useState(true);
   const [orderPlacing, setOrderPlacing] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState([])
-  const [newAddressSet , setNewAddressSet] = useState(false) ; 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [newAddressSet, setNewAddressSet] = useState(false); 
+  const [validPromoCodes, setValidPromoCodes] = useState({});
+  const [newAddress, setNewAddress] = useState({
+    type: 'home',
+    title: '',
+    address: '',
+    city: 'Kolkata',
+    pincode: '',
+    landmark: ''
+  });
+
   const navigate = useNavigate();
 
-
+  // Check authentication
   useEffect(() => {
-    
-    console.log("Cart items:", cartItems);
-
-    
-},[setOrderPlacing])
-  
-  
-  useEffect(() => {
-
     const email = localStorage.getItem('email');
     const isValid = localStorage.getItem('isValid');
 
-    if(!email || !isValid) {
-        navigate("/")
+    if (!email || !isValid) {
+      navigate("/");
     }
-    
-  })
+  }, [navigate]);
 
-  // Mock addresses
-
+  // Fetch saved addresses
   useEffect(() => {
-    const user = localStorage.getItem("email"); // or user ID if you're using _id
+    const user = localStorage.getItem("email");
     fetch(`http://localhost:80/address?user=${encodeURIComponent(user)}`, {
       method: 'GET',
       headers: {
@@ -71,230 +68,227 @@ const Cart = () => {
       .then(data => {
         console.log("Addresses:", data);
         setSavedAddresses(data);
+        setSelectedAddress(data.find(addr => addr.isDefault));
       })
       .catch(error => {
         console.error("Error fetching addresses:", error);
       });
+  }, []);
 
-    
-  },  [])
-
-
- useEffect(() => {
-  const user = localStorage.getItem("email");
-
-  const addressData = newAddress
-
-  fetch('http://localhost:80/add-address', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('email')}`
-    },
-    'body': JSON.stringify(addressData)
-  })
-  
-    .then(response => response.json())
-    .then(data => {
-      console.log("Address added:", data);
+  // Fetch cart items
+  useEffect(() => {
+    const email = localStorage.getItem('email');
+    fetch(`http://localhost:80/cart?user=${encodeURIComponent(email)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
     })
-    .catch(error => {
-      console.error("Error adding address:", error);
-    });
+      .then(res => res.json())
+      .then(data => {
+        console.log('Cart items:', data);
+        setCartItems(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching cart items:', err);
+        setIsLoading(false);
+      });
+  }, []);
 
-}, [setNewAddressSet]);
+  // Fetch promo codes
+  useEffect(() => {
+  const fetchPromoCodes = async () => {
+    try {
+      const response = await fetch('http://localhost:80/coupons', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
 
+      const formattedCodes = {};
+      data.forEach(coupon => {
+        formattedCodes[coupon.code.toUpperCase()] = {
+          discount: coupon.discount,
+          type: coupon.type,
+          minOrder: coupon.minOrder || 0,
+          active: coupon.active
+        };
+      });
 
+      setValidPromoCodes(formattedCodes);
+    } catch (error) {
+      console.error('Error fetching promo codes:', error);
+    }
+  };
 
-  
+  fetchPromoCodes();
+}, []);
 
-  const [newAddress, setNewAddress] = useState({
-    type: 'residential',
+  // Add new address
+  useEffect(() => {
+    if (!newAddressSet) return;
+
+    const addressData = {
+      user: localStorage.getItem("email"),
+      ...newAddress
+    };
+
+    fetch('http://localhost:80/add-address', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(addressData)
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Address added:", data);
+        setSavedAddresses(prev => [...prev, data]);
+        if (!selectedAddress) setSelectedAddress(data);
+        setNewAddressSet(false);
+      })
+      .catch(error => {
+        console.error("Error adding address:", error);
+        setNewAddressSet(false);
+      });
+  }, [newAddressSet, newAddress, selectedAddress]);
+
+  const updateQuantity = (id, newQuantity) => {
+    if (newQuantity === 0) {
+      removeItem(id);
+      return;
+    }
+    setCartItems(items =>
+      items.map(item =>
+        item._id === id ? { ...item, quantity: newQuantity } : item
+      )
+    );
+  };
+
+  const removeItem = (id) => {
+    setCartItems(items => items.filter(item => item._id !== id));
+  };
+
+  const applyPromoCode = () => {
+  const code = promoCode.toUpperCase();
+  const promo = validPromoCodes[code];
+
+  if (promo) {
+    if (subtotal >= promo.minOrder) {
+      setAppliedPromo({
+        code,
+        ...promo
+      });
+      setPromoCode('');
+    } else {
+      alert(`Minimum order amount ₹${promo.minOrder || 0} required to use this promo code.`);
+    }
+  } else {
+    alert('Invalid promo code');
+  }
+};
+
+const removePromoCode = () => {
+  setAppliedPromo(null);
+  setPromoCode('');
+};
+
+const addNewAddress = () => {
+  if (!newAddress.title || !newAddress.address || !newAddress.pincode) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  setNewAddressSet(true);
+  setShowAddAddressModal(false);
+  setNewAddress({
+    type: 'home',
     title: '',
     address: '',
     city: 'Kolkata',
     pincode: '',
     landmark: ''
   });
-
-  
-  // Mock API call to fetch cart items
-  useEffect(() => {
-    const fetchCartItems = () => {
-      setTimeout(() => {
-   const email = localStorage.getItem('email');
-
-  fetch(`http://localhost:80/cart?user=${encodeURIComponent(email)}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-    .then(res => res.json())
-    .then(data => {
-      console.log('Cart items:', data);
-      setCartItems(data);
-      // use data as needed
-    })
-    .catch(err => console.error('Error fetching cart items:', err));
-
-          
-        setSelectedAddress(savedAddresses.find(addr => addr.isDefault));
-        setIsLoading(false);
-      }, 1000);
-    };
-
-    fetchCartItems();
-  }, []);
-
-  const updateQuantity = (id, newQuantity) => {
-  if (newQuantity === 0) {
-    removeItem(id);
-    return;
-  }
-  setCartItems(items =>
-    items.map(item =>
-      item._id === id ? { ...item, quantity: newQuantity } : item
-    )
-  );
 };
 
-const removeItem = (id) => {
-  setCartItems(items => items.filter(item => item._id !== id));
+const handleCart = () => {
+  window.location.reload();
 };
 
-  const applyPromoCode = () => {
-    const validPromoCodes = {
-      'SAVE20': { discount: 20, type: 'percentage' },
-      'FLAT50': { discount: 50, type: 'fixed' },
-      'NEWUSER': { discount: 15, type: 'percentage' }
-    };
+const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+const deliveryFee = subtotal > 0 ? 0 : 40;
+const platformFee = 0;
+const gst = 0;
 
-    if (validPromoCodes[promoCode.toUpperCase()]) {
-      setAppliedPromo({
-        code: promoCode.toUpperCase(),
-        ...validPromoCodes[promoCode.toUpperCase()]
-      });
-    } else {
-      alert('Invalid promo code');
-    }
-  };
-
-  const removePromoCode = () => {
-    setAppliedPromo(null);
-    setPromoCode('');
-  };
-
-  const addNewAddress = () => {
-    setNewAddressSet(true) ; 
-    
-    if (!newAddress.title || !newAddress.address || !newAddress.pincode) {
-      alert('Please fill all required fields');
-      return;
-    }
-
-    const newAddr = {
-      id: Date.now(),
-      ...newAddress,
-      isDefault: savedAddresses.length === 0
-    };
-
-
-    
-    
-    setSavedAddresses([...savedAddresses, newAddr]);
-    setSelectedAddress(newAddr);
-    setShowAddAddressModal(false);
-    setNewAddress({
-      type: 'home',
-      title: '',
-      address: '',
-      city: 'Kolkata',
-      pincode: '',
-      landmark: ''
-    });
-  };
-
-  
-
-  const handleCart = () => {
-    window.location.reload();
-  };
-
-  
-
-  // Calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = subtotal > 0 ? 0 : 40;
-  const platformFee = 0;
-  const gst = 0 ;
-  
-  let discount = 0;
-  if (appliedPromo) {
-    discount = appliedPromo.type === 'percentage' 
+let discount = 0;
+if (appliedPromo) {
+  if (subtotal >= appliedPromo.minOrder) {
+    discount = appliedPromo.type === 'percentage'
       ? Math.round(subtotal * appliedPromo.discount / 100)
       : appliedPromo.discount;
+  } else {
+    // If subtotal drops below minOrder after promo applied, remove it
+    alert(`Order value dropped below ₹${appliedPromo.minOrder}. Promo code removed.`);
+    removePromoCode();
   }
+}
 
-  const total = subtotal + deliveryFee + platformFee + gst - discount;
+const total = subtotal + deliveryFee + platformFee + gst - discount;
 
-const placeOrder = async () => {
-  if (!selectedAddress) {
-    alert('Please select a delivery address');
-    return;
-  }
 
-  setOrderPlacing(true);
-
-  try {
-    const response = await fetch('http://localhost:80/order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({
-        user: localStorage.getItem('email'),
-        selectedAddress,
-        cartItems,
-        promoCode,
-        paymentMethod,
-        total, 
-        orderNote, 
-      })
-    });
-
-    if (!response.ok) {
-      // If server returns an error status
-      const errorData = await response.json();
-      alert(`Failed to place order: ${errorData.message || response.statusText}`);
-      setOrderPlacing(false);
+  const placeOrder = async () => {
+    if (!selectedAddress) {
+      alert('Please select a delivery address');
       return;
-     window.location.reload();
     }
 
-    const data = await response.json();
-    alert('Order placed successfully! 🎉');
-    console.log('Order response:', data);
+    setOrderPlacing(true);
 
-    // Optionally clear cart or reset states here
+    try {
+      const response = await fetch('http://localhost:80/order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          user: localStorage.getItem('email'),
+          selectedAddress,
+          cartItems,
+          promoCode: appliedPromo ? appliedPromo.code : '',
+          paymentMethod,
+          total,
+          orderNote
+        })
+      });
 
-  } 
-  catch (error) {
-    console.error('Error placing order:', error);
-    alert('An error occurred while placing your order. Please try again.');
-  } 
-  finally 
-  {
-    setOrderPlacing(false);
-    handleCart(); 
-  }
-};
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(`Failed to place order: ${errorData.message || response.statusText}`);
+        return;
+      }
 
+      const data = await response.json();
+      alert('Order placed successfully! 🎉');
+      console.log('Order response:', data);
+      handleCart();
+    } catch (error) {
+      console.error('Error placing order:', error);
+      alert('An error occurred while placing your order. Please try again.');
+    } finally {
+      setOrderPlacing(false);
+    }
+  };
 
   const goBack = () => {
-    navigate("/")
-};
+    navigate("/");
+  };
 
   if (isLoading) {
     return (
@@ -355,6 +349,7 @@ const placeOrder = async () => {
                   <span>Delivery Address</span>
                 </h3>
                 <button 
+                  type="button"
                   onClick={() => setShowAddressModal(true)}
                   className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
                   style={{ color: '#FF4C29', borderColor: '#FF4C29' }}
@@ -373,14 +368,15 @@ const placeOrder = async () => {
                     <p className="text-sm text-gray-600">{selectedAddress.address}</p>
                     <p className="text-sm text-gray-600">{selectedAddress.city} - {selectedAddress.pincode}</p>
                     {selectedAddress.landmark && (
-                      <p className="text-xs text-gray-500">Landmark: {selectedAddress.landmark}</p>
+                      <p className="text-sm text-gray-500">Landmark: {selectedAddress.landmark}</p>
                     )}
                   </div>
                 </div>
               ) : (
                 <button 
+                  type="button"
                   onClick={() => setShowAddressModal(true)}
-                  className="w-full p-4 text-center border-2 border-dashed rounded-lg hover:bg-gray-50"
+                  className="w-full p-2 border-2 border-dashed rounded-lg hover:bg-gray-50"
                   style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
                 >
                   + Add Delivery Address
@@ -396,16 +392,14 @@ const placeOrder = async () => {
               
               <div className="divide-y divide-gray-100">
                 {cartItems.map((item) => (
-              <div key={item._id} className="p-6">
-                <div className="flex items-start space-x-4">
-                  <img src={item.image} alt="Cart item" className="object-cover w-24 h-24 rounded" />
-
-                      
+                  <div key={item._id} className="p-6">
+                    <div className="flex items-start space-x-4">
+                      <img src={item.image} alt={item.name || "Cart item"} className="object-cover w-24 h-24 rounded" />
                       <div className="flex-1">
                         <h4 className="mb-1 font-semibold" style={{ color: '#333333' }}>{item.name}</h4>
-                        <p className="mb-2 text-sm text-gray-600">{item.description}</p>
+                        <p className="mb-2 text-sm text-gray-600">{item.description || "No description available."}</p>
                         
-                        {item.customizations.length > 0 && (
+                        {item.customizations?.length > 0 && (
                           <div className="mb-3">
                             {item.customizations.map((custom, index) => (
                               <span key={index} className="inline-block px-2 py-1 mb-1 mr-2 text-xs rounded-full" style={{ backgroundColor: '#28C76F20', color: '#28C76F' }}>
@@ -418,6 +412,7 @@ const placeOrder = async () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <button 
+                              type="button"
                               onClick={() => updateQuantity(item._id, item.quantity - 1)}
                               className="p-1 border rounded-full hover:bg-gray-50"
                               style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
@@ -426,6 +421,7 @@ const placeOrder = async () => {
                             </button>
                             <span className="w-8 font-semibold text-center" style={{ color: '#333333' }}>{item.quantity}</span>
                             <button 
+                              type="button"
                               onClick={() => updateQuantity(item._id, item.quantity + 1)}
                               className="p-1 border rounded-full hover:bg-gray-50"
                               style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
@@ -437,6 +433,7 @@ const placeOrder = async () => {
                           <div className="flex items-center space-x-3">
                             <span className="font-semibold" style={{ color: '#333333' }}>₹{item.price * item.quantity}</span>
                             <button 
+                              type="button"
                               onClick={() => removeItem(item._id)}
                               className="p-1 text-red-500 rounded hover:bg-red-50"
                             >
@@ -462,7 +459,7 @@ const placeOrder = async () => {
                 onChange={(e) => setOrderNote(e.target.value)}
                 placeholder="Any special instructions for your order..."
                 className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-200"
-                rows={3}
+                rows="3"
               />
             </div>
           </div>
@@ -482,7 +479,11 @@ const placeOrder = async () => {
                     <CheckCircle size={16} style={{ color: '#28C76F' }} />
                     <span className="font-medium" style={{ color: '#28C76F' }}>{appliedPromo.code}</span>
                   </div>
-                  <button onClick={removePromoCode} className="text-red-500 hover:text-red-700">
+                  <button 
+                    type="button"
+                    onClick={removePromoCode}
+                    className="text-red-500 hover:text-red-700"
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -496,6 +497,7 @@ const placeOrder = async () => {
                     className="flex-1 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
                   />
                   <button 
+                    type="button"
                     onClick={applyPromoCode}
                     className="px-4 py-3 font-semibold text-white rounded-lg hover:shadow-lg"
                     style={{ backgroundColor: '#FF4C29' }}
@@ -513,7 +515,7 @@ const placeOrder = async () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span style={{ color: '#333333' }}>₹{subtotal}</span>
+                  <span>₹{subtotal}</span>
                 </div>
                 
                 <div className="flex justify-between">
@@ -521,7 +523,7 @@ const placeOrder = async () => {
                     <span>Delivery Fee</span>
                     {deliveryFee === 0 && <Info size={14} className="text-green-500" />}
                   </span>
-                  <span style={{ color: '#333333' }}>
+                  <span>
                     {deliveryFee === 0 ? (
                       <span className="text-green-500">FREE</span>
                     ) : (
@@ -532,12 +534,12 @@ const placeOrder = async () => {
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Platform Fee</span>
-                  <span style={{ color: '#333333' }}>₹{platformFee}</span>
+                  <span>₹{platformFee}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">GST (0%)</span>
-                  <span style={{ color: '#333333' }}>₹{gst}</span>
+                  <span>₹{gst}</span>
                 </div>
                 
                 {appliedPromo && (
@@ -585,6 +587,7 @@ const placeOrder = async () => {
 
             {/* Place Order Button */}
             <button
+              type="button"
               onClick={placeOrder}
               disabled={orderPlacing}
               className="w-full py-4 text-lg font-bold text-white transition-all rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -615,7 +618,11 @@ const placeOrder = async () => {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold" style={{ color: '#333333' }}>Select Address</h3>
-                <button onClick={() => setShowAddressModal(false)} className="text-gray-500 hover:text-gray-700">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddressModal(false)} 
+                  className="text-gray-500 hover:text-gray-700"
+                >
                   ✕
                 </button>
               </div>
@@ -647,7 +654,11 @@ const placeOrder = async () => {
               ))}
               
               <button 
-                onClick={() => setShowAddAddressModal(true)}
+                type="button"
+                onClick={() => {
+                  setShowAddressModal(false);
+                  setShowAddAddressModal(true);
+                }}
                 className="w-full p-4 text-center border-2 border-dashed rounded-lg hover:bg-gray-50"
                 style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
               >
@@ -665,7 +676,11 @@ const placeOrder = async () => {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold" style={{ color: '#333333' }}>Add New Address</h3>
-                <button onClick={() => setShowAddAddressModal(false)} className="text-gray-500 hover:text-gray-700">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddAddressModal(false)} 
+                  className="text-gray-500 hover:text-gray-700"
+                >
                   ✕
                 </button>
               </div>
@@ -678,7 +693,6 @@ const placeOrder = async () => {
                   {[
                     { value: 'home', label: 'Home', icon: Home },
                     { value: 'work', label: 'Work', icon: Building },
-                    // { value: 'other', label: 'Other', icon: MapPin }
                   ].map(({ value, label, icon: Icon }) => (
                     <label key={value} className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -689,7 +703,7 @@ const placeOrder = async () => {
                         onChange={(e) => setNewAddress({...newAddress, type: e.target.value})}
                         style={{ accentColor: '#FF4C29' }}
                       />
-                      <Icon size={16} />
+                      <Icon size={16} style={{ color: '#FF4C29' }} />
                       <span>{label}</span>
                     </label>
                   ))}
@@ -754,15 +768,16 @@ const placeOrder = async () => {
               
               <div className="flex pt-4 space-x-3">
                 <button 
+                  type="button"
                   onClick={() => setShowAddAddressModal(false)}
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button 
+                  type="button"
                   onClick={addNewAddress}
                   className="flex-1 px-4 py-3 font-semibold text-white rounded-lg hover:shadow-lg"
-                  
                   style={{ backgroundColor: '#FF4C29' }}
                 >
                   Save Address
