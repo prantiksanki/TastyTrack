@@ -148,7 +148,7 @@ const Cart = () => {
     const code = promoCode.toUpperCase();
     const promo = validPromoCodes[code];
 
-    if (promo) {
+    if (promo.active) {
       if (subtotal >= promo.minOrder) {
         setAppliedPromo({
           code,

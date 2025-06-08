@@ -54,6 +54,8 @@ const RestaurantAdminDashboard = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [allOrders, setAllOrders] = useState([]);
+  const [allOrderLength, setAllOrderLength] = useState(0);
 
     
   // Fetch initial data 
@@ -67,6 +69,11 @@ const RestaurantAdminDashboard = () => {
         const ordersData = await ordersResponse.json();
         setOrders(ordersData);
         setNewOrderCount(ordersData.length);
+
+        const allOrdersResponse = await fetch('http://localhost:81/ordersall');
+        const allOrdersData = await allOrdersResponse.json();
+        setAllOrders(allOrdersData);
+        setAllOrderLength(allOrdersData.length);
 
         // Fetch menu items
         const menuResponse = await fetch('http://localhost:81/menu');
@@ -102,6 +109,32 @@ const RestaurantAdminDashboard = () => {
 
     fetchInitialData();
   }, []);
+
+  // Get today's date in YYYY-MM-DD format
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
+const today = getTodayDateString();
+
+// Filter today's orders
+const todaysOrders = orders.filter(order => order.createdAt.startsWith(today));
+
+// Count each menu item
+const menuCountMap = {};
+todaysOrders.forEach(order => {
+  order.cartItems.forEach(item => {
+    if (menuCountMap[item.name]) {
+      menuCountMap[item.name] += item.quantity;
+    } else {
+      menuCountMap[item.name] = item.quantity;
+    }
+  });
+});
+
+// Convert to array for display
+const dailyMenuStats = Object.entries(menuCountMap).map(([name, count]) => ({
+  name,
+  count,
+})).sort((a, b) => b.count - a.count); // Optional: sort by count
+
 
   // Clear error after 5 seconds
   useEffect(() => {
@@ -330,45 +363,67 @@ const togglePaymentStatus = async (orderId) => {
     )}
   </button>
 );
+const addOrUpdateCoupon = async (couponData) => {
+  try {
+    const payload = {
+      code: couponData.code,
+      discount: couponData.discount,
+      type: couponData.type,
+      minOrder: couponData.minOrder,
+      active: couponData.active,
+    };
 
-  const addOrUpdateCoupon = async (couponData) => {
-    try {
-      const formattedCouponData = {
-        ...couponData,
-        discount: parseInt(couponData.discount) || 0,
-        minOrder: parseInt(couponData.minOrder) || 0,
-      };
+    let response, data;
 
-      if (editingCoupon) {
-        const response = await fetch(`http://localhost:81/coupons/${editingCoupon.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formattedCouponData),
-        });
-        if (!response.ok) throw new Error('Failed to update coupon');
-        const updatedCoupon = await response.json();
-        setCoupons(
-          coupons.map((coupon) =>
-            coupon.id === editingCoupon.id ? { ...coupon, ...updatedCoupon } : coupon
-          )
-        );
-      } else {
-        const response = await fetch('http://localhost:81/coupons', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formattedCouponData, id: Date.now() }),
-        });
-        if (!response.ok) throw new Error('Failed to add coupon');
-        const newCoupon = await response.json();
-        setCoupons([...coupons, newCoupon]);
-      }
-      setShowCouponModal(false);
-      setEditingCoupon(null);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error adding/updating coupon:', err);
+    if (couponData._id) {
+      // Update coupon
+      response = await fetch(`http://localhost:81/coupons/${couponData._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('Failed to update coupon');
+      data = await response.json();
+
+      setCoupons((prevCoupons) =>
+        prevCoupons.map((c) => (c._id === couponData._id ? data.item : c))
+      );
+    } else {
+      // Add coupon
+      response = await fetch('http://localhost:81/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('Failed to add coupon');
+      data = await response.json();
+
+      setCoupons((prevCoupons) => [...prevCoupons, data.item]);
     }
-  };
+
+    setShowCouponModal(false);
+    setEditingCoupon(null);
+  } catch (err) {
+    setError(err.message);
+    console.error('Error adding/updating coupon:', err);
+  }
+};
+
+
+const deleteCoupon = async (couponId) => {
+  try {
+    const response = await fetch(`http://localhost:81/coupons/${couponId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete coupon');
+
+    // Remove deleted coupon from state
+    setCoupons((prevCoupons) => prevCoupons.filter((c) => c._id !== couponId));
+  } catch (err) {
+    setError(err.message);
+    console.error('Error deleting coupon:', err);
+  }
+};
 
   // constTButton = ({ id, icon: Icon, label, badge }) => (
   //   <button
@@ -661,169 +716,217 @@ const OrderCard = ({ order }) => (
       </div>
     </div>
   );
+const CouponModal = ({
+  editingCoupon,
+  setEditingCoupon,
+  setShowCouponModal,
+  coupons,
+  setCoupons,
+  addOrUpdateCoupon,
+}) => {
+  const [formState, setFormState] = useState({
+    code: '',
+    discount: '',
+    type: 'percentage',
+    minOrder: '',
+    active: true,
+  });
+  const [formError, setFormError] = useState(null);
 
-  const CouponModal = () => {
-    const [formState, setFormState] = useState({
-      code: editingCoupon?.code || '',
-      discount: editingCoupon?.discount || '',
-      type: editingCoupon?.type || 'percentage',
-      minOrder: editingCoupon?.minOrder || '',
-      active: editingCoupon?.active ?? true,
-    });
-
-    // Handle input changes
-    const handleInputChange = (e) => {
-      const { name, value, type, checked } = e.target;
-      setFormState((prev) => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value,
-      }));
-    };
-
-    // Handle form submission
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      addOrUpdateCoupon({
-        code: formState.code,
-        discount: parseInt(formState.discount) || 0,
-        type: formState.type,
-        minOrder: parseInt(formState.minOrder) || 0,
-        active: formState.active,
+  // Initialize form state when editingCoupon changes
+  useEffect(() => {
+    if (editingCoupon) {
+      setFormState({
+        code: editingCoupon.code || '',
+        discount: editingCoupon.discount?.toString() || '',
+        type: editingCoupon.type || 'percentage',
+        minOrder: editingCoupon.minOrder?.toString() || '',
+        active: editingCoupon.active ?? true,
       });
-    };
+    } else {
+      setFormState({
+        code: '',
+        discount: '',
+        type: 'percentage',
+        minOrder: '',
+        active: true,
+      });
+    }
+  }, [editingCoupon]);
 
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="w-full max-w-md p-6 bg-white rounded-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">{editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}</h2>
-            <button
-              onClick={() => {
-                setShowCouponModal(false);
-                setEditingCoupon(null);
-                setFormState({
-                  code: '',
-                  discount: '',
-                  type: 'percentage',
-                  minOrder: '',
-                  active: true,
-                });
-              }}
-              className="text-gray-500 hover:text-gray-700"
-              aria-label="Close coupon modal"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div>
-                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-code">
-                  Coupon Code
-                </label>
-                <input
-                  id="coupon-code"
-                  name="code"
-                  type="text"
-                  value={formState.code}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-discount">
-                  Discount
-                </label>
-                <input
-                  id="coupon-discount"
-                  name="discount"
-                  type="number"
-                  value={formState.discount}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-type">
-                  Type
-                </label>
-                <select
-                  id="coupon-type"
-                  name="type"
-                  value={formState.type}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="percentage">Percentage</option>
-                  <option value="fixed">Fixed Amount</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-medium" htmlFor="coupon-minOrder">
-                  Minimum Order
-                </label>
-                <input
-                  id="coupon-minOrder"
-                  name="minOrder"
-                  type="number"
-                  value={formState.minOrder}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="coupon-active"
-                  name="active"
-                  type="checkbox"
-                  checked={formState.active}
-                  onChange={handleInputChange}
-                  className="w-4 h-4"
-                />
-                <label className="text-sm font-medium" htmlFor="coupon-active">
-                  Active
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-2 mt-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCouponModal(false);
-                  setEditingCoupon(null);
-                  setFormState({
-                    code: '',
-                    discount: '',
-                    type: 'percentage',
-                    minOrder: '',
-                    active: true,
-                  });
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                aria-label="Cancel coupon changes"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
-                aria-label="Save coupon"
-              >
-                Save
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
+  // Handle input changes including checkbox
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormState((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    setFormError(null); // Clear error on input change
   };
 
+  // Submit form and call addOrUpdateCoupon
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // Basic validation
+    if (!formState.code.trim()) {
+      setFormError('Coupon code is required');
+      return;
+    }
+    if (!formState.discount || parseInt(formState.discount, 10) <= 0) {
+      setFormError('Discount must be a positive number');
+      return;
+    }
+    if (!formState.minOrder || parseInt(formState.minOrder, 10) < 0) {
+      setFormError('Minimum order must be a non-negative number');
+      return;
+    }
 
+    try {
+      await addOrUpdateCoupon({
+        code: formState.code.trim(),
+        discount: parseInt(formState.discount, 10) || 0,
+        type: formState.type,
+        minOrder: parseInt(formState.minOrder, 10) || 0,
+        active: formState.active,
+        _id: editingCoupon?._id,
+      });
+    } catch (err) {
+      setFormError(err.message || 'Failed to save coupon');
+    }
+  };
+
+  // Close and reset modal
+  const handleClose = () => {
+    setShowCouponModal(false);
+    setEditingCoupon(null);
+    setFormState({
+      code: '',
+      discount: '',
+      type: 'percentage',
+      minOrder: '',
+      active: true,
+    });
+    setFormError(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-md p-6 bg-white rounded-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">{editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}</h2>
+          <button onClick={handleClose} className="text-gray-500 hover:text-gray-700" aria-label="Close coupon modal">
+            <X size={24} />
+          </button>
+        </div>
+
+        {formError && (
+          <div className="flex items-center justify-between p-4 mb-4 text-red-800 bg-red-100 rounded-lg">
+            <div className="flex items-center">
+              <AlertCircle className="mr-2" size={20} />
+              {formError}
+            </div>
+            <button
+              onClick={() => setFormError(null)}
+              className="text-red-800 hover:text-red-900"
+              aria-label="Dismiss error"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="coupon-code" className="block mb-1 text-sm font-medium">Coupon Code</label>
+              <input
+                id="coupon-code"
+                name="code"
+                type="text"
+                value={formState.code}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="coupon-discount" className="block mb-1 text-sm font-medium">Discount</label>
+              <input
+                id="coupon-discount"
+                name="discount"
+                type="number"
+                value={formState.discount}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                required
+                min="1"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="coupon-type" className="block mb-1 text-sm font-medium">Type</label>
+              <select
+                id="coupon-type"
+                name="type"
+                value={formState.type}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="percentage">Percentage</option>
+                <option value="fixed">Fixed Amount</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="coupon-minOrder" className="block mb-1 text-sm font-medium">Minimum Order</label>
+              <input
+                id="coupon-minOrder"
+                name="minOrder"
+                type="number"
+                value={formState.minOrder}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                required
+                min="0"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                id="coupon-active"
+                name="active"
+                type="checkbox"
+                checked={formState.active}
+                onChange={handleInputChange}
+                className="w-4 h-4"
+              />
+              <label htmlFor="coupon-active" className="text-sm font-medium">Active</label>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-6">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              aria-label="Cancel coupon changes"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600"
+              aria-label="Save coupon"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
   
 const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
@@ -1523,7 +1626,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
                             <Edit size={16} />
                           </button>
                           <button
-                            onClick={() => deleteCoupon(coupon.id)}
+                            onClick={() => deleteCoupon(coupon._id)}
                             className="text-red-600 hover:text-red-800"
                             aria-label={`Delete coupon ${coupon.code}`}
                           >
@@ -1557,63 +1660,57 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
                 </div>
               </div>
             )}
+{activeTab === 'reports' && (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold">Reports & Analytics</h2>
 
-            {activeTab === 'reports' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold">Reports & Analytics</h2>
+    <div className="p-6 bg-white rounded-lg shadow-sm">
+      <h3 className="mb-4 text-lg font-semibold">Monthly Report</h3>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="p-4 text-center rounded-lg bg-red-50">
+          <p className="text-2xl font-bold text-red-600">{orders.length}</p>
+          <p className="text-sm text-gray-600">Total Orders</p>
+        </div>
+        <div className="p-4 text-center rounded-lg bg-green-50">
+          <p className="text-2xl font-bold text-green-600">
+            ₹{payments.reduce((sum, p) => sum + p.amount, 0)}
+          </p>
+          <p className="text-sm text-gray-600">Total Revenue</p>
+        </div>
+        <div className="p-4 text-center rounded-lg bg-blue-50">
+          <p className="text-2xl font-bold text-blue-600">{customers.length}</p>
+          <p className="text-sm text-gray-600">Total Customers</p>
+        </div>
+        <div className="p-4 text-center rounded-lg bg-purple-50">
+          <p className="text-2xl font-bold text-purple-600">
+            ₹{orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.total, 0) / orders.length) : 0}
+          </p>
+          <p className="text-sm text-gray-600">Avg Order Value</p>
+        </div>
+      </div>
+    </div>
 
-                <div className="p-6 bg-white rounded-lg shadow-sm">
-                  <h3 className="mb-4 text-lg font-semibold">Monthly Report</h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <div className="p-4 text-center rounded-lg bg-red-50">
-                      <p className="text-2xl font-bold text-red-600">{orders.length}</p>
-                      <p className="text-sm text-gray-600">Total Orders</p>
-                    </div>
-                    <div className="p-4 text-center rounded-lg bg-green-50">
-                      <p className="text-2xl font-bold text-green-600">
-                        ₹{orders.reduce((sum, order) => sum + order.total, 0)}
-                      </p>
-                      <p className="text-sm text-gray-600">Total Revenue</p>
-                    </div>
-                    <div className="p-4 text-center rounded-lg bg-blue-50">
-                      <p className="text-2xl font-bold text-blue-600">{customers.length}</p>
-                      <p className="text-sm text-gray-600">Total Customers</p>
-                    </div>
-                    <div className="p-4 text-center rounded-lg bg-purple-50">
-                      <p className="text-2xl font-bold text-purple-600">
-                        ₹{orders.length > 0 ? Math.round(orders.reduce((sum, order) => sum + order.total, 0) / orders.length) : 0}
-                      </p>
-                      <p className="text-sm text-gray-600">Avg Order Value</p>
-                    </div>
-                  </div>
-                </div>
+    <div className="p-6 bg-white rounded-lg shadow-sm">
+      <h3 className="mb-4 text-lg font-semibold">Today's Menu Sales Count</h3>
+      {dailyMenuStats.length === 0 ? (
+        <p className="text-sm text-gray-500">No orders placed today.</p>
+      ) : (
+        <div className="space-y-3">
+          {dailyMenuStats.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+            >
+              <span className="font-medium">{item.name}</span>
+              <span className="text-sm text-gray-700">{item.count} orders</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
-                <div className="p-6 bg-white rounded-lg shadow-sm">
-                  <h3 className="mb-4 text-lg font-semibold">Top Selling Items</h3>
-                  <div className="space-y-3">
-                    {menuItems.slice(0, 5).map((item, index) => (
-                      <div
-                        key={item._id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center justify-center w-6 h-6 text-sm text-white bg-red-500 rounded-full">
-                            {index + 1}
-                          </span>
-                          <span className="font-medium">{item.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">₹{item.price}</p>
-                          <p className="text-sm text-gray-600">
-                            {Math.floor(Math.random() * 50) + 10} orders
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1727,6 +1824,11 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
         </div>
       )}
 
+
+
+
+      
+
       {showCustomerModal && selectedCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
@@ -1789,34 +1891,77 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               <div>
                 <h3 className="mb-3 font-semibold">Recent Orders</h3>
                 <div className="space-y-2">
-                  {orders
-                    .filter((order) => order.user === selectedCustomer.email)
-                    .slice(0, 5)
-                    .map((order) => (
-                      <div
-                        key={order._id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
-                      >
-                        <div>
-                          <span className="font-medium">{order._id}</span>
-                          <span className="ml-2 text-gray-600">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">₹{order.total}</p>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              order.isActive
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}
+          {allOrders
+                        .filter((order) => order.user === selectedCustomer.email)
+                        .map((order) => (
+                          <div
+                            key={order._id}
+                            className="p-4 mb-6 rounded-lg shadow-sm bg-gray-50"
                           >
-                            {order.isActive ? 'Pending' : 'Delivered'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <span className="font-medium">Order ID: {order._id}</span>
+                                <span className="ml-2 text-gray-600">
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold">₹{order.total}</p>
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs ${
+                                    order.isPaid
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }`}
+                                >
+                                  {order.isPaid ? 'Paid' : 'Pending'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Order Status */}
+                            {/* <div className="mb-2 text-sm text-gray-700">
+                              <strong>Status:</strong> {order.status}
+                            </div> */}
+
+                            {/* Address */}
+                            <div className="mb-2 text-sm text-gray-700">
+                              <strong>Deliver to:</strong> {order.selectedAddress?.title} <br />
+                              {order.selectedAddress?.address}, {order.selectedAddress?.city} - {order.selectedAddress?.pincode}<br />
+                              <span className="text-xs italic">Landmark: {order.selectedAddress?.landmark}</span>
+                            </div>
+
+                            {/* Payment and Promo */}
+                            <div className="mb-2 space-y-1 text-sm text-gray-700">
+                              <div><strong>Payment Method:</strong> {order.paymentMethod}</div>
+                              {order.promoCode && <div><strong>Promo Code:</strong> {order.promoCode}</div>}
+                              {order.orderNote && <div><strong>Note:</strong> {order.orderNote}</div>}
+                            </div>
+
+                            {/* Cart Items */}
+                            <div className="mt-4 space-y-2">
+                              {order.cartItems.map((item, index) => (
+                                <div key={index} className="flex gap-4 p-3 bg-white border rounded-md">
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="object-cover w-16 h-16 rounded"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium">{item.name}</p>
+                                    <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                                    <p className="text-sm text-gray-600">Price: ₹{item.price}</p>
+                                    {item.description && (
+                                      <p className="text-sm italic text-gray-500">{item.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                      ))}
+
+
                 </div>
               </div>
             </div>
@@ -1824,15 +1969,26 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
         </div>
       )}
 
-      {showItemModal && <ItemModal />}
-      {showCouponModal && <CouponModal />}
-      {showPaymentModal && <PaymentModal
+{showItemModal && <ItemModal />}
+{showCouponModal && (
+  <CouponModal
+    editingCoupon={editingCoupon}
+    setEditingCoupon={setEditingCoupon}
+    setShowCouponModal={setShowCouponModal}
+    coupons={coupons}
+    setCoupons={setCoupons}
+    addOrUpdateCoupon={addOrUpdateCoupon}
+  />
+)}      
+
+{showPaymentModal && <PaymentModal
                             setShowPaymentModal={setShowPaymentModal}
                             setPayments={setPayments}
                             setError={setError}
                           />
 }
-    </div>
+
+</div>
 
     
   );

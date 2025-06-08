@@ -217,13 +217,17 @@ app.get('/coupons', async (req, res) => {
 // Create Coupon
 app.post('/coupons', async (req, res) => {
   try {
+    console.log('Received coupon data:', req.body); // << debug
+
     const newCoupon = new Coupon(req.body);
     await newCoupon.save();
     res.status(201).json({ message: 'Coupon created', item: newCoupon });
   } catch (error) {
+    console.error('Error creating coupon:', error); // << debug error here
     res.status(500).json({ message: 'Error creating coupon', error: error.message });
   }
 });
+
 
 // Update Coupon by ID
 app.put('/coupons/:id', async (req, res) => {
@@ -335,6 +339,18 @@ app.get("/customersDetails", async (req, res) => {
     res.status(500).json({ message: "Error fetching customers", error: err.message });
   }
 });
+
+
+app.get("/ordersall" , async (req, res) => {
+  try {
+    const orders = await Order.find();
+    res.json(orders);
+
+  }
+  catch (err) {
+    res.status(500).json({ message: "Error fetching orders", error: err.message });
+  }
+  })
 
 
 
