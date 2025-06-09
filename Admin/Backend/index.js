@@ -14,12 +14,12 @@ const Mongo_URI = process.env.MONGO_URL;
 const app = express();
 const PORT = process.env.PORT || 81; 
 
-
 const allowedOrigins = [
   'http://localhost:5173',
-    'http://localhost:5174',
-    'https://luckeys-kitchen-admin.onrender.com/'
+  'http://localhost:5174',
+  'https://luckeys-kitchen-admin.onrender.com' // ✅ No trailing slash
 ];
+
 
 // console.log(process.env.NGROK_ENDPOINT)
 
