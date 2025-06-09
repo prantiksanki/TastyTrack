@@ -1774,114 +1774,121 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
         </div>
       </div>
 
-      {showOrderModal && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Order Details - {selectedOrder._id}</h2>
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-                aria-label="Close order modal"
-              >
-                <X size={24} />
-              </button>
+{showOrderModal && selectedOrder && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-2 bg-black bg-opacity-50">
+    <div className="w-full max-w-md max-h-[90vh] p-4 sm:p-6 overflow-y-auto bg-white rounded-lg shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-bold break-words sm:text-xl">
+          Order Details - {selectedOrder._id}
+        </h2>
+        <button
+          onClick={() => setShowOrderModal(false)}
+          className="text-gray-500 hover:text-gray-700"
+          aria-label="Close order modal"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="space-y-6">
+        {/* Customer Info */}
+        <div className="p-4 rounded-lg bg-gray-50">
+          <h3 className="mb-2 font-semibold">Customer Information</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Users size={16} />
+              <span className="break-all">{selectedOrder.user}</span>
             </div>
-
-            <div className="space-y-6">
-              <div className="p-4 rounded-lg bg-gray-50">
-                <h3 className="mb-2 font-semibold">Customer Information</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Users size={16} />
-                    <span>{selectedOrder.user}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} />
-                    <span>{selectedOrder.selectedAddress?.address}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} />
-                    <span>{selectedOrder.selectedAddress?.pincode}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CreditCard size={16} />
-                    <span>Payment Method: {selectedOrder.paymentMethod}</span>
-                  </div>
-                  {selectedOrder.orderNote && (
-                    <div className="flex items-center gap-2">
-                      <span>Note: {selectedOrder.orderNote}</span>
-                    </div>
-                  )}
-                  {selectedOrder.promoCode && (
-                    <div className="flex items-center gap-2">
-                      <Gift size={16} />
-                      <span>Promo Code: {selectedOrder.promoCode}</span>
-                    </div>
-                  )}
-                </div>
+            <div className="flex items-center gap-2">
+              <MapPin size={16} />
+              <span className="break-words">{selectedOrder.selectedAddress?.address}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin size={16} />
+              <span>{selectedOrder.selectedAddress?.pincode}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CreditCard size={16} />
+              <span>Payment Method: {selectedOrder.paymentMethod}</span>
+            </div>
+            {selectedOrder.orderNote && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Note:</span>
+                <span className="break-words">{selectedOrder.orderNote}</span>
               </div>
-
-              <div>
-                <h3 className="mb-3 font-semibold">Order Items</h3>
-                <div className="space-y-2">
-                  {selectedOrder.cartItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-2 border-b">
-                      <div>
-                        <span className="font-medium">{item.name}</span>
-                        <span className="ml-2 text-gray-600">x{item.quantity}</span>
-                      </div>
-                      <span className="font-semibold">₹{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between py-2 text-lg font-bold">
-                    <span>Total</span>
-                    <span>₹{selectedOrder.total}</span>
-                  </div>
-                </div>
+            )}
+            {selectedOrder.promoCode && (
+              <div className="flex items-center gap-2">
+                <Gift size={16} />
+                <span>Promo Code: {selectedOrder.promoCode}</span>
               </div>
+            )}
+          </div>
+        </div>
 
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block mb-2 text-sm font-medium" htmlFor="order-status">
-                    Order Status
-                  </label>
-                  <select
-                    id="order-status"
-                    value={selectedOrder.isActive ? 'pending' : 'delivered'}
-                    onChange={(e) => {
-                      updateOrderStatus(selectedOrder._id, e.target.value);
-                      setSelectedOrder({ ...selectedOrder, isActive: e.target.value === 'pending' });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="delivered">Delivered</option>
-                  </select>
+        {/* Order Items */}
+        <div>
+          <h3 className="mb-3 font-semibold">Order Items</h3>
+          <div className="space-y-2 text-sm">
+            {selectedOrder.cartItems.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between py-2 border-b">
+                <div>
+                  <span className="font-medium">{item.name}</span>
+                  <span className="ml-2 text-gray-600">x{item.quantity}</span>
                 </div>
-                <div className="flex-1">
-                  <label className="block mb-2 text-sm font-medium">Payment Status</label>
-                  <button
-                    onClick={() => {
-                      togglePaymentStatus(selectedOrder._id);
-                      setSelectedOrder({
-                        ...selectedOrder,
-                        isPaid: !selectedOrder.isPaid,
-                      });
-                    }}
-                    className={`w-full px-4 py-2 rounded-lg ${
-                      selectedOrder.isPaid ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                    }`}
-                    aria-label={`Toggle payment status for order ${selectedOrder._id}`}
-                  >
-                    {selectedOrder.isPaid ? 'Paid' : 'Unpaid'}
-                  </button>
-                </div>
+                <span className="font-semibold">₹{item.price * item.quantity}</span>
               </div>
+            ))}
+            <div className="flex items-center justify-between py-2 text-lg font-bold">
+              <span>Total</span>
+              <span>₹{selectedOrder.total}</span>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Status Actions */}
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex-1">
+            <label className="block mb-2 text-sm font-medium" htmlFor="order-status">
+              Order Status
+            </label>
+            <select
+              id="order-status"
+              value={selectedOrder.isActive ? 'pending' : 'delivered'}
+              onChange={(e) => {
+                updateOrderStatus(selectedOrder._id, e.target.value);
+                setSelectedOrder({ ...selectedOrder, isActive: e.target.value === 'pending' });
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            >
+              <option value="pending">Pending</option>
+              <option value="delivered">Delivered</option>
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block mb-2 text-sm font-medium">Payment Status</label>
+            <button
+              onClick={() => {
+                togglePaymentStatus(selectedOrder._id);
+                setSelectedOrder({
+                  ...selectedOrder,
+                  isPaid: !selectedOrder.isPaid,
+                });
+              }}
+              className={`w-full px-4 py-2 rounded-lg ${
+                selectedOrder.isPaid ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+              }`}
+              aria-label={`Toggle payment status for order ${selectedOrder._id}`}
+            >
+              {selectedOrder.isPaid ? 'Paid' : 'Unpaid'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
 
@@ -1950,7 +1957,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               <div>
                 <h3 className="mb-3 font-semibold">Recent Orders</h3>
                 <div className="space-y-2">
-          {allOrders
+                      {allOrders
                         .filter((order) => order.user === selectedCustomer.email)
                         .map((order) => (
                           <div
