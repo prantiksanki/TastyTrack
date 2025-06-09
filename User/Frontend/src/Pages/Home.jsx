@@ -1,11 +1,17 @@
 import { MainContent, Footer, FoodCard, NavBar } from "../components";
 import { useEffect, useState } from 'react';
+const dotenv = require('dotenv');
 
 const Home = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [foods, setFoods] = useState([]); // <-- Manage food items in state
   // const [isLoading , setIsLoading] = useState(true) ; 
+  // Initialize dotenv
+  dotenv.config();
+  const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-user-backend.onrender.com';
+  
+  
 
 
   //  if (isLoading) {
@@ -33,7 +39,7 @@ const Home = () => {
 
     // Fetch menu items
     setTimeout(() => {
-    fetch("http://localhost:80/menu")
+    fetch(`${baseURL}/menu`)
       .then(response => response.json())
       .then(data => {
         console.log("Fetched foods:", data);
@@ -59,7 +65,7 @@ const Home = () => {
     //         image: '🍛',
     //         customizations: ['Extra Spicy', 'No Onions']
 
-   fetch("http://localhost:80/cart", {
+   fetch(`${baseURL}/cart`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
