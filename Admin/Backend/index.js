@@ -14,11 +14,28 @@ const Mongo_URI = process.env.MONGO_URL;
 const app = express();
 const PORT = process.env.PORT || 81; 
 
+
+const allowedOrigins = [
+  'http://localhost:5173',
+    'http://localhost:5174',
+    'https://luckeys-kitchen-admin.onrender.com/'
+];
+
+// console.log(process.env.NGROK_ENDPOINT)
+
 app.use(cors({
-  origin: 'https://luckeys-kitchen-admin.onrender.com/', // Replace with your frontend origin
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like from Postman, curl, mobile apps)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log("Blocked CORS for origin:", origin);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
-
 mongoose.connect(Mongo_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
