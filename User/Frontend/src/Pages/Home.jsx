@@ -69,7 +69,7 @@ const Home = () => {
       </main>
 
       {/* Footer sticks to bottom if not enough content */}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

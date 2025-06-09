@@ -30,23 +30,26 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white shadow-lg">
+    <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-sm">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Luckey's <span style={{ color: '#FF4C29' }}>Kitchen</span>
+            <div className="flex items-center justify-center w-8 h-8 mr-2 bg-green-500 rounded-lg">
+              <div className="w-4 h-4 bg-white rounded-sm"></div>
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">
+              Luckey's Kitchen
             </h1>
           </div>
 
           {/* Navigation Items */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
             {/* Call Button */}
             <button
               onClick={onCall}
-              className="flex items-center px-4 py-2 space-x-2 transition-all duration-300 rounded-lg hover:shadow-lg"
-              style={{ backgroundColor: '#28C76F', color: 'white' }}
+              className="flex items-center px-4 py-2 space-x-2 font-medium text-white transition-all duration-300 rounded-full shadow-md hover:shadow-lg hover:bg-green-600"
+              style={{ backgroundColor: '#28C76F' }}
             >
               <Phone size={18} />
               <span className="hidden sm:inline">Call Restaurant</span>
@@ -54,13 +57,14 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
 
             {/* Cart */}
             <div className="relative">
-              <button className="p-2 transition-colors rounded-full hover:bg-gray-100"
-                onClick={() => navigate('/cart')}>
-                <ShoppingCart size={24} style={{ color: '#FF4C29' }} />
+              <button
+                className="p-2 transition-colors rounded-full hover:bg-gray-50"
+                onClick={() => navigate('/cart')}
+              >
+                <ShoppingCart size={20} className="text-gray-600" />
                 {cartCount > 0 && (
                   <span
-                    className="absolute flex items-center justify-center w-6 h-6 text-xs font-semibold text-white rounded-full -top-2 -right-2"
-                    style={{ backgroundColor: '#FF4C29' }}
+                    className="absolute flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full -top-2 -right-2"
                   >
                     {cartCount}
                   </span>
@@ -73,21 +77,21 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
               <div className="relative">
                 <button
                   onClick={() => setShowProfile(!showProfile)}
-                  className="flex items-center p-2 space-x-2 transition-colors rounded-lg hover:bg-gray-100"
+                  className="flex items-center p-2 transition-colors rounded-full hover:bg-gray-50"
                 >
-                  <User size={20} style={{ color: '#333333' }} />
+                  <User size={20} className="text-gray-600" />
                 </button>
                 {showProfile && (
-                  <div className="absolute right-0 w-48 mt-2 bg-white border rounded-lg shadow-lg">
+                  <div className="absolute right-0 w-48 mt-2 bg-white border border-gray-100 rounded-lg shadow-lg">
                     <button
-                      className="flex items-center w-full px-4 py-2 space-x-2 text-left hover:bg-gray-50"
+                      className="flex items-center w-full px-4 py-2 space-x-2 text-left text-gray-700 transition-colors hover:bg-gray-50"
                       onClick={() => navigate('/profile')}
                     >
                       <User size={16} />
                       <span>Profile</span>
                     </button>
                     <button
-                      className="flex items-center w-full px-4 py-2 space-x-2 text-left text-red-600 hover:bg-gray-50"
+                      className="flex items-center w-full px-4 py-2 space-x-2 text-left text-red-600 transition-colors hover:bg-gray-50"
                       onClick={handleLogout}
                     >
                       <LogOut size={16} />
@@ -99,14 +103,14 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
             ) : (
               <div className="flex items-center space-x-3">
                 <button
-                  className="flex items-center px-4 py-2 space-x-2 transition-colors border rounded-lg hover:bg-gray-50"
+                  className="flex items-center px-4 py-2 space-x-2 text-gray-600 transition-colors bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:shadow-md"
                   onClick={() => navigate('/auth')}
                 >
                   <LogIn size={18} />
                   <span className="hidden sm:inline">Login</span>
                 </button>
                 <button
-                  className="flex items-center px-4 py-2 space-x-2 text-white transition-all duration-300 rounded-lg hover:shadow-lg"
+                  className="flex items-center px-4 py-2 space-x-2 font-medium text-white transition-all duration-300 rounded-full shadow-md hover:shadow-lg hover:bg-red-600"
                   style={{ backgroundColor: '#FF4C29' }}
                   onClick={() => navigate('/auth')}
                 >

@@ -3,31 +3,43 @@ import { MapPin, Phone, Mail } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer style={{ backgroundColor: '#333333' }} className="py-8 text-white">
-      <div className="max-w-4xl px-4 mx-auto space-y-4 text-center">
-        <h3 className="text-2xl font-bold">
-          Luckey's <span style={{ color: '#FF4C29' }}>Kitchen</span>
-        </h3>
-        <p className="text-gray-300">
-          Authentic food made with love. Fast, fresh, and flavorful.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4 text-gray-300">
-          <div className="flex items-center space-x-2">
-            <MapPin size={16} />
-            <span>Industrial City - Durgapur</span>
+    <footer className="mt-20 text-white bg-gray-900">
+      <div className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="space-y-4 text-center">
+          {/* Logo */}
+          <div className="flex items-center justify-center mb-4 space-x-2">
+            <div className="flex items-center justify-center w-8 h-8 bg-green-500 rounded-lg">
+              <div className="w-4 h-4 bg-white rounded-sm"></div>
+            </div>
+            <span className="text-xl font-bold">Luckey's Kitchen</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Phone size={16} />
-            <span>+91 8170841976</span>
+
+          {/* Tagline */}
+          <p className="text-gray-300">
+            Authentic food made with love. Fast, fresh, and flavorful.
+          </p>
+
+          {/* Contact Details */}
+          <div className="flex flex-wrap justify-center gap-4 text-gray-300">
+            <div className="flex items-center space-x-2">
+              <MapPin size={16} />
+              <span>Industrial City - Durgapur</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Phone size={16} />
+              <span>+91 8170841976</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Mail size={16} />
+              <span>luckeyskitchen@gmail.com</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Mail size={16} />
-            <span>luckeyskitchen@gmail.com</span>
-          </div>
+
+          {/* Copyright */}
+          <p className="mt-4 text-sm text-gray-400">
+            © 2025 Luckey's Kitchen. All rights reserved.
+          </p>
         </div>
-        <p className="mt-4 text-sm text-gray-400">
-          &copy; 2025 Lucky's Kitchen. All rights reserved.
-        </p>
       </div>
     </footer>
   );
