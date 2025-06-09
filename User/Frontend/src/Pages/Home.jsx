@@ -1,4 +1,4 @@
-import { MainContent, Footer, FoodCard, NavBar } from "../components";
+import { MainContent, Footer, NavBar } from "../components";
 import { useEffect, useState } from 'react';
 
 const Home = () => {
@@ -6,7 +6,6 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [foods, setFoods] = useState([]);
 
-  // ✅ Use environment variable (VITE_BASE_URL)
   const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-user-backend.onrender.com';
 
   useEffect(() => {
@@ -54,16 +53,22 @@ const Home = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#FAFAFA' }} className="min-h-screen">
+    <div className="min-h-screen flex flex-col bg-[#FAFAFA]">
       <NavBar
         cartCount={cartCount}
         isLoggedIn={isLoggedIn}
         onCall={handleCall}
       />
-      <MainContent
-        foods={foods}
-        onAddToCart={handleAddToCart}
-      />
+
+      {/* Main content takes available space */}
+      <main className="flex-grow">
+        <MainContent
+          foods={foods}
+          onAddToCart={handleAddToCart}
+        />
+      </main>
+
+      {/* Footer sticks to bottom if not enough content */}
       <Footer />
     </div>
   );
