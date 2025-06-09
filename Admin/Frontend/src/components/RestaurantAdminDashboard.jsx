@@ -56,8 +56,7 @@ const RestaurantAdminDashboard = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [allOrders, setAllOrders] = useState([]);
   const [allOrderLength, setAllOrderLength] = useState(0);
-  const baseURL = 'http://localhost:81';
-
+  const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-admin-backend.onrender.com'; 
     
   // Fetch initial data 
   useEffect(() => {
