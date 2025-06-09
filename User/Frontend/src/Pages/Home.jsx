@@ -1,37 +1,17 @@
 import { MainContent, Footer, FoodCard, NavBar } from "../components";
 import { useEffect, useState } from 'react';
-const dotenv = require('dotenv');
 
 const Home = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [foods, setFoods] = useState([]); // <-- Manage food items in state
-  // const [isLoading , setIsLoading] = useState(true) ; 
-  // Initialize dotenv
-  dotenv.config();
+  const [foods, setFoods] = useState([]);
+
+  // ✅ Use environment variable (VITE_BASE_URL)
   const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-user-backend.onrender.com';
-  
-  
-
-
-  //  if (isLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#FAFAFA' }}>
-  //       <div className="text-center">
-  //         <div className="w-12 h-12 mx-auto mb-4 border-b-2 rounded-full animate-spin" style={{ borderColor: '#FF4C29' }}></div>
-  //         <p style={{ color: '#333333' }}>Loading...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
 
   useEffect(() => {
-    // setIsLoading(true) ; 
     const email = localStorage.getItem('email');
     const isValid = localStorage.getItem('isValid');
-
-    console.log("email:", email, "isValid:", isValid);
 
     if (email && JSON.parse(isValid) === true) {
       setIsLoggedIn(true);
@@ -39,50 +19,38 @@ const Home = () => {
 
     // Fetch menu items
     setTimeout(() => {
-    fetch(`${baseURL}/menu`)
-      .then(response => response.json())
-      .then(data => {
-        console.log("Fetched foods:", data);
-        setFoods(data); // <-- Set fetched data to state
-      })
-      .catch(err => {
-        console.error("Error fetching food data:", err);
-      });
-            // setIsLoading(false) ; 
-
-    } , 1000)
-  }, []);
+      fetch(`${baseURL}/menu`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("Fetched foods:", data);
+          setFoods(data);
+        })
+        .catch(err => {
+          console.error("Error fetching food data:", err);
+        });
+    }, 1000);
+  }, [baseURL]);
 
   const handleAddToCart = (food) => {
     setCartCount(prev => prev + 1);
-    const foods = food; 
-    console.log('Added to cart:', foods);
-    // id: 1,
-    //         name: 'Butter Chicken',
-    //         description: 'Creamy tomato-based curry with tender chicken',
-    //         price: 320,
-    //         quantity: 2,
-    //         image: '🍛',
-    //         customizations: ['Extra Spicy', 'No Onions']
+    console.log('Added to cart:', food);
 
-   fetch(`${baseURL}/cart`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: foods.name,
-              description : foods.description,
-              price : foods.price,
-              image : foods.image,
-              customizations : foods.customizations,
-              user: localStorage.getItem("email")
-            })
-});
-
+    fetch(`${baseURL}/cart`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: food.name,
+        description: food.description,
+        price: food.price,
+        image: food.image,
+        customizations: food.customizations,
+        user: localStorage.getItem("email")
+      })
+    });
   };
 
   const handleCall = () => {
     alert(`Calling Lucky's Kitchen at +91 98765 43210`);
-    // window.location.href = 'tel:+919876543210';
   };
 
   return (
