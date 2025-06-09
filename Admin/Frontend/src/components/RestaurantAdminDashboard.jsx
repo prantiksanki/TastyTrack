@@ -168,36 +168,66 @@ const dailyMenuStats = Object.entries(menuCountMap).map(([name, count]) => ({
   // Clear error after 5 seconds
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
+      const timer = setTimeout(() => setError(null), 15000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
+
+
+  
   // Poll for new orders
-  useEffect(() => {
-    const interval = setInterval(async () => {
+useEffect(() => {
+  let interval;
+
+  const startPolling = () => {
+    interval = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return; // Skip if tab not visible
+
       try {
         const response = await fetch(`${baseURL}/orders/new`);
         if (!response.ok) throw new Error('Failed to fetch new orders');
         const newOrders = await response.json();
+
         if (newOrders.length > 0) {
           setOrders((prev) => {
-            // Avoid duplicates by checking existing order IDs
             const existingIds = new Set(prev.map(order => order._id));
             const uniqueNewOrders = newOrders.filter(order => !existingIds.has(order._id));
             return [...prev, ...uniqueNewOrders];
-              //  return [...uniqueNewOrders];
-
           });
           setNewOrderCount((prev) => prev + newOrders.length);
         }
       } catch (err) {
         console.error('Error fetching new orders:', err);
       }
-    }, 10000);
+    }, 30000);
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  // Start polling initially
+  startPolling();
+
+  // Pause/resume polling on tab visibility change
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      if (!interval) startPolling();
+    } else {
+      clearInterval(interval);
+      interval = null;
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Cleanup
+  return () => {
+    clearInterval(interval);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, []);
+
+
+
+
 
   const todayOrders = orders.filter(
     (order) => new Date(order.createdAt).toDateString() === new Date().toDateString()
