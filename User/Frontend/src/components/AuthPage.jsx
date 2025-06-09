@@ -28,7 +28,7 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const baseURL = import.meta.env.VITE_BASE_URL;;
+  const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-user-backend.onrender.com';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

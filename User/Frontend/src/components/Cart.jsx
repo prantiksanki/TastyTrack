@@ -40,7 +40,7 @@ const Cart = () => {
     pincode: '',
     landmark: ''
   });
-  const baseURL = import.meta.env.VITE_BASE_URL;;
+  const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-user-backend.onrender.com';
 
   const navigate = useNavigate();
 

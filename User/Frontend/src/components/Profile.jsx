@@ -9,7 +9,7 @@ const ProfileSection = () => {
   const [error, setError] = useState(null); // Error state
   const [orderHistory, setOrderHistory] = useState([]); // Order history state
   const navigate = useNavigate(); // For navigation
-  const baseURL = import.meta.env.VITE_BASE_URL;; // Replace with your backend API URL
+  const baseURL = import.meta.env.VITE_BASE_URL || 'https://tastytrack-user-backend.onrender.com'; // Replace with your backend API URL
 
   // Fetch user data
   useEffect(() => {
