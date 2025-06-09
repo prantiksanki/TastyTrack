@@ -293,10 +293,10 @@ const Cart = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#FAFAFA' }}>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f1e8 0%, #ede4d8 100%)' }}>
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 border-b-2 rounded-full animate-spin" style={{ borderColor: '#FF4C29' }}></div>
-          <p style={{ color: '#333333' }}>Loading your cart...</p>
+          <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-green-500 rounded-full animate-spin"></div>
+          <p className="text-gray-900">Loading your cart...</p>
         </div>
       </div>
     );
@@ -304,7 +304,7 @@ const Cart = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#FAFAFA' }}>
+      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f1e8 0%, #ede4d8 100%)' }}>
         <div className="max-w-md px-4 py-8 mx-auto">
           <button onClick={goBack} className="flex items-center mb-6 space-x-2 text-gray-600 hover:text-gray-800">
             <ArrowLeft size={20} />
@@ -312,12 +312,11 @@ const Cart = () => {
           </button>
           <div className="py-16 text-center">
             <div className="mb-4 text-6xl">🛒</div>
-            <h2 className="mb-2 text-2xl font-bold" style={{ color: '#333333' }}>Your cart is empty</h2>
+            <h2 className="mb-2 text-2xl font-bold text-gray-900">Your cart is empty</h2>
             <p className="mb-6 text-gray-600">Add some delicious items to get started</p>
             <button 
               onClick={goBack}
-              className="px-6 py-3 font-semibold text-white transition-all rounded-lg hover:shadow-lg"
-              style={{ backgroundColor: '#FF4C29' }}
+              className="px-6 py-3 font-semibold text-white transition-all bg-green-500 rounded-full hover:shadow-lg hover:scale-105"
             >
               Browse Menu
             </button>
@@ -328,285 +327,304 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FAFAFA' }}>
-      <div className="max-w-4xl px-4 py-6 mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={goBack} className="flex items-center space-x-2 text-gray-600 hover:text-gray-800">
-            <ArrowLeft size={20} />
-            <span>Back to Menu</span>
-          </button>
-          <h1 className="text-2xl font-bold" style={{ color: '#333333' }}>Your Cart ({cartItems.length})</h1>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f1e8 0%, #ede4d8 100%)' }}>
+      <div className="relative">
+        {/* Decorative Elements */}
+        <div className="absolute w-16 h-16 top-10 left-10 opacity-20">
+          <div className="w-full h-1 transform rotate-45 bg-green-500 rounded"></div>
+          <div className="w-full h-1 -mt-1 transform -rotate-45 bg-green-500 rounded"></div>
+        </div>
+        <div className="absolute w-12 h-12 bg-red-400 rounded-full top-20 right-20 opacity-20"></div>
+        <div className="absolute w-8 h-8 bg-green-500 rounded-full bottom-20 left-1/4 opacity-30"></div>
+        <div className="absolute w-6 h-6 bg-red-500 rounded-full bottom-32 right-1/3 opacity-40"></div>
+
+        {/* Floating vegetables */}
+        <div className="absolute w-16 h-16 top-1/4 right-10 opacity-60">
+          🍅
+        </div>
+        <div className="absolute w-12 h-12 bottom-1/4 right-20 opacity-60">
+          🍅
+        </div>
+        <div className="absolute opacity-50 top-1/3 left-1/4 w-14 h-14">
+          🥬
+        </div>
+        <div className="absolute w-12 h-12 opacity-50 bottom-20 right-10">
+          🥬
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column - Cart Items & Address */}
-          <div className="space-y-6 lg:col-span-2">
-            {/* Delivery Address */}
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="flex items-center space-x-2 text-lg font-semibold" style={{ color: '#333333' }}>
-                  <MapPin size={20} style={{ color: '#FF4C29' }} />
-                  <span>Delivery Address</span>
-                </h3>
-                <button 
-                  type="button"
-                  onClick={() => setShowAddressModal(true)}
-                  className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
-                  style={{ color: '#FF4C29', borderColor: '#FF4C29' }}
-                >
-                  Change
-                </button>
-              </div>
-              
-              {selectedAddress ? (
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg" style={{ backgroundColor: '#FFD93D20' }}>
-                    {selectedAddress.type === 'home' ? <Home size={16} style={{ color: '#FF4C29' }} /> : <Building size={16} style={{ color: '#FF4C29' }} />}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium" style={{ color: '#333333' }}>{selectedAddress.title}</p>
-                    <p className="text-sm text-gray-600">{selectedAddress.address}</p>
-                    <p className="text-sm text-gray-600">{selectedAddress.city} - {selectedAddress.pincode}</p>
-                    {selectedAddress.landmark && (
-                      <p className="text-sm text-gray-500">Landmark: {selectedAddress.landmark}</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <button 
-                  type="button"
-                  onClick={() => setShowAddressModal(true)}
-                  className="w-full p-2 border-2 border-dashed rounded-lg hover:bg-gray-50"
-                  style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
-                >
-                  + Add Delivery Address
-                </button>
-              )}
-            </div>
+        <div className="max-w-5xl px-4 py-8 mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <button onClick={goBack} className="flex items-center space-x-2 text-gray-600 hover:text-gray-800">
+              <ArrowLeft size={20} />
+              <span>Back to Menu</span>
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Your Cart ({cartItems.length})</h1>
+          </div>
 
-            {/* Cart Items */}
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-semibold" style={{ color: '#333333' }}>Order Items</h3>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Left Column - Cart Items & Address */}
+            <div className="space-y-6 lg:col-span-2">
+              {/* Delivery Address */}
+              <div className="p-6 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="flex items-center space-x-2 text-lg font-semibold text-gray-900">
+                    <MapPin size={20} className="text-green-500" />
+                    <span>Delivery Address</span>
+                  </h3>
+                  <button 
+                    type="button"
+                    onClick={() => setShowAddressModal(true)}
+                    className="px-3 py-1 text-sm text-green-500 border border-green-500 rounded-full hover:bg-green-50"
+                  >
+                    Change
+                  </button>
+                </div>
+                
+                {selectedAddress ? (
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      {selectedAddress.type === 'home' ? <Home size={16} className="text-green-500" /> : <Building size={16} className="text-green-500" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{selectedAddress.title}</p>
+                      <p className="text-sm text-gray-600">{selectedAddress.address}</p>
+                      <p className="text-sm text-gray-600">{selectedAddress.city} - {selectedAddress.pincode}</p>
+                      {selectedAddress.landmark && (
+                        <p className="text-sm text-gray-500">Landmark: {selectedAddress.landmark}</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={() => setShowAddressModal(true)}
+                    className="w-full p-2 text-green-500 border-2 border-green-500 border-dashed rounded-lg hover:bg-green-50"
+                  >
+                    + Add Delivery Address
+                  </button>
+                )}
               </div>
-              
-              <div className="divide-y divide-gray-100">
-                {cartItems.map((item) => (
-                  <div key={item._id} className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <img src={item.image} alt={item.name || "Cart item"} className="object-cover w-24 h-24 rounded" />
-                      <div className="flex-1">
-                        <h4 className="mb-1 font-semibold" style={{ color: '#333333' }}>{item.name}</h4>
-                        <p className="mb-2 text-sm text-gray-600">{item.description || "No description available."}</p>
-                        
-                        {item.customizations?.length > 0 && (
-                          <div className="mb-3">
-                            {item.customizations.map((custom, index) => (
-                              <span key={index} className="inline-block px-2 py-1 mb-1 mr-2 text-xs rounded-full" style={{ backgroundColor: '#28C76F20', color: '#28C76F' }}>
-                                {custom}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <button 
-                              type="button"
-                              onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                              className="p-1 border rounded-full hover:bg-gray-50"
-                              style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
-                            >
-                              <Minus size={16} />
-                            </button>
-                            <span className="w-8 font-semibold text-center" style={{ color: '#333333' }}>{item.quantity}</span>
-                            <button 
-                              type="button"
-                              onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                              className="p-1 border rounded-full hover:bg-gray-50"
-                              style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </div>
+
+              {/* Cart Items */}
+              <div className="shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900">Order Items</h3>
+                </div>
+                
+                <div className="divide-y divide-gray-100">
+                  {cartItems.map((item) => (
+                    <div key={item._id} className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <img src={item.image} alt={item.name || "Cart item"} className="object-cover w-24 h-24 rounded-lg" />
+                        <div className="flex-1">
+                          <h4 className="mb-1 font-semibold text-gray-900">{item.name}</h4>
+                          <p className="mb-2 text-sm text-gray-600">{item.description || "No description available."}</p>
                           
-                          <div className="flex items-center space-x-3">
-                            <span className="font-semibold" style={{ color: '#333333' }}>₹{item.price * item.quantity}</span>
-                            <button 
-                              type="button"
-                              onClick={() => removeItem(item._id)}
-                              className="p-1 text-red-500 rounded hover:bg-red-50"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                          {item.customizations?.length > 0 && (
+                            <div className="mb-3">
+                              {item.customizations.map((custom, index) => (
+                                <span key={index} className="inline-block px-2 py-1 mb-1 mr-2 text-xs text-green-500 rounded-full bg-green-500/10">
+                                  {custom}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <button 
+                                type="button"
+                                onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                                className="p-1 text-green-500 border border-green-500 rounded-full hover:bg-green-50"
+                              >
+                                <Minus size={16} />
+                              </button>
+                              <span className="w-8 font-semibold text-center text-gray-900">{item.quantity}</span>
+                              <button 
+                                type="button"
+                                onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                                className="p-1 text-green-500 border border-green-500 rounded-full hover:bg-green-50"
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
+                            
+                            <div className="flex items-center space-x-3">
+                              <span className="font-semibold text-gray-900">₹{item.price * item.quantity}</span>
+                              <button 
+                                type="button"
+                                onClick={() => removeItem(item._id)}
+                                className="p-1 text-red-500 rounded hover:bg-red-50"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Note */}
+              <div className="p-6 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                <h3 className="flex items-center mb-4 space-x-2 text-lg font-semibold text-gray-900">
+                  <StickyNote size={20} className="text-green-500" />
+                  <span>Add Note (Optional)</span>
+                </h3>
+                <textarea
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  placeholder="Any special instructions for your order..."
+                  className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-green-200"
+                  rows="3"
+                />
               </div>
             </div>
 
-            {/* Add Note */}
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="flex items-center mb-4 space-x-2 text-lg font-semibold" style={{ color: '#333333' }}>
-                <StickyNote size={20} style={{ color: '#FF4C29' }} />
-                <span>Add Note (Optional)</span>
-              </h3>
-              <textarea
-                value={orderNote}
-                onChange={(e) => setOrderNote(e.target.value)}
-                placeholder="Any special instructions for your order..."
-                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-200"
-                rows="3"
-              />
-            </div>
-          </div>
-
-          {/* Right Column - Bill Summary */}
-          <div className="space-y-6">
-            {/* Promo Code */}
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="flex items-center mb-4 space-x-2 text-lg font-semibold" style={{ color: '#333333' }}>
-                <Tag size={20} style={{ color: '#FF4C29' }} />
-                <span>Promo Code</span>
-              </h3>
-              
-              {appliedPromo ? (
-                <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: '#28C76F20' }}>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle size={16} style={{ color: '#28C76F' }} />
-                    <span className="font-medium" style={{ color: '#28C76F' }}>{appliedPromo.code}</span>
+            {/* Right Column - Bill Summary */}
+            <div className="space-y-6">
+              {/* Promo Code */}
+              <div className="p-6 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                <h3 className="flex items-center mb-4 space-x-2 text-lg font-semibold text-gray-900">
+                  <Tag size={20} className="text-green-500" />
+                  <span>Promo Code</span>
+                </h3>
+                
+                {appliedPromo ? (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle size={16} className="text-green-500" />
+                      <span className="font-medium text-green-500">{appliedPromo.code}</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={removePromoCode}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <button 
-                    type="button"
-                    onClick={removePromoCode}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                    placeholder="Enter promo code"
-                    className="flex-1 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  />
-                  <button 
-                    type="button"
-                    onClick={applyPromoCode}
-                    className="px-4 py-3 font-semibold text-white rounded-lg hover:shadow-lg"
-                    style={{ backgroundColor: '#FF4C29' }}
-                  >
-                    Apply
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Bill Summary */}
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="mb-4 text-lg font-semibold" style={{ color: '#333333' }}>Bill Summary</h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span>₹{subtotal}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="flex items-center space-x-1 text-gray-600">
-                    <span>Delivery Fee</span>
-                    {deliveryFee === 0 && <Info size={14} className="text-green-500" />}
-                  </span>
-                  <span>
-                    {deliveryFee === 0 ? (
-                      <span className="text-green-500">FREE</span>
-                    ) : (
-                      `₹${deliveryFee}`
-                    )}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Platform Fee</span>
-                  <span>₹{platformFee}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">GST (0%)</span>
-                  <span>₹{gst}</span>
-                </div>
-                
-                {appliedPromo && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount ({appliedPromo.code})</span>
-                    <span>-₹{discount}</span>
+                ) : (
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      placeholder="Enter promo code"
+                      className="flex-1 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
+                    />
+                    <button 
+                      type="button"
+                      onClick={applyPromoCode}
+                      className="px-4 py-3 font-semibold text-white bg-green-500 rounded-full hover:shadow-lg hover:scale-105"
+                    >
+                      Apply
+                    </button>
                   </div>
                 )}
+              </div>
+
+              {/* Bill Summary */}
+              <div className="p-6 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                <h3 className="mb-4 text-lg font-semibold text-gray-900">Bill Summary</h3>
                 
-                <div className="pt-3 border-t">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span style={{ color: '#333333' }}>Total</span>
-                    <span style={{ color: '#FF4C29' }}>₹{total}</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-900">₹{subtotal}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="flex items-center space-x-1 text-gray-600">
+                      <span>Delivery Fee</span>
+                      {deliveryFee === 0 && <Info size={14} className="text-green-500" />}
+                    </span>
+                    <span>
+                      {deliveryFee === 0 ? (
+                        <span className="text-green-500">FREE</span>
+                      ) : (
+                        `₹${deliveryFee}`
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Platform Fee</span>
+                    <span className="text-gray-900">₹{platformFee}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">GST (0%)</span>
+                    <span className="text-gray-900">₹{gst}</span>
+                  </div>
+                  
+                  {appliedPromo && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount ({appliedPromo.code})</span>
+                      <span>-₹{discount}</span>
+                    </div>
+                  )}
+                  
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span className="text-gray-900">Total</span>
+                      <span className="text-green-500">₹{total}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Payment Method */}
-            <div className="p-6 bg-white rounded-lg shadow-sm">
-              <h3 className="mb-4 text-lg font-semibold" style={{ color: '#333333' }}>Payment Method</h3>
-              
-              <div className="space-y-3">
-                {[
-                  { id: 'card', label: 'Credit/Debit Card', icon: CreditCard },
-                  { id: 'upi', label: 'UPI', icon: Smartphone },
-                  { id: 'wallet', label: 'Wallet', icon: Wallet }
-                ].map(({ id, label, icon: Icon }) => (
-                  <label key={id} className="flex items-center p-3 space-x-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={id}
-                      checked={paymentMethod === id}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-4 h-4"
-                      style={{ accentColor: '#FF4C29' }}
-                    />
-                    <Icon size={20} style={{ color: '#FF4C29' }} />
-                    <span style={{ color: '#333333' }}>{label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Place Order Button */}
-            <button
-              type="button"
-              onClick={placeOrder}
-              disabled={orderPlacing}
-              className="w-full py-4 text-lg font-bold text-white transition-all rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#FF4C29' }}
-            >
-              {orderPlacing ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="w-5 h-5 border-b-2 border-white rounded-full animate-spin"></div>
-                  <span>Placing Order...</span>
+              {/* Payment Method */}
+              <div className="p-6 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl">
+                <h3 className="mb-4 text-lg font-semibold text-gray-900">Payment Method</h3>
+                
+                <div className="space-y-3">
+                  {[
+                    { id: 'card', label: 'Credit/Debit Card', icon: CreditCard },
+                    { id: 'upi', label: 'UPI', icon: Smartphone },
+                    { id: 'wallet', label: 'Wallet', icon: Wallet }
+                  ].map(({ id, label, icon: Icon }) => (
+                    <label key={id} className="flex items-center p-3 space-x-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value={id}
+                        checked={paymentMethod === id}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4"
+                        style={{ accentColor: '#28C76F' }}
+                      />
+                      <Icon size={20} className="text-green-500" />
+                      <span className="text-gray-900">{label}</span>
+                    </label>
+                  ))}
                 </div>
-              ) : (
-                `Place Order • ₹${total}`
-              )}
-            </button>
-            
-            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-              <Clock size={16} />
-              <span>Estimated delivery: 25-30 mins</span>
+              </div>
+
+              {/* Place Order Button */}
+              <button
+                type="button"
+                onClick={placeOrder}
+                disabled={orderPlacing}
+                className="w-full py-4 text-lg font-bold text-white transition-all bg-green-500 rounded-full hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {orderPlacing ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-5 h-5 border-b-2 border-white rounded-full animate-spin"></div>
+                    <span>Placing Order...</span>
+                  </div>
+                ) : (
+                  `Place Order • ₹${total}`
+                )}
+              </button>
+              
+              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                <Clock size={16} />
+                <span>Estimated delivery: 25-30 mins</span>
+              </div>
             </div>
           </div>
         </div>
@@ -615,10 +633,10 @@ const Cart = () => {
       {/* Address Selection Modal */}
       {showAddressModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto shadow-lg">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold" style={{ color: '#333333' }}>Select Address</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Select Address</h3>
                 <button 
                   type="button" 
                   onClick={() => setShowAddressModal(false)} 
@@ -638,15 +656,15 @@ const Cart = () => {
                     setShowAddressModal(false);
                   }}
                   className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${
-                    selectedAddress?.id === address.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200'
+                    selectedAddress?.id === address.id ? 'border-green-500 bg-green-50' : 'border-gray-200'
                   }`}
                 >
                   <div className="flex items-start space-x-3">
-                    <div className="p-2 rounded-lg" style={{ backgroundColor: '#FFD93D20' }}>
-                      {address.type === 'home' ? <Home size={16} style={{ color: '#FF4C29' }} /> : <Building size={16} style={{ color: '#FF4C29' }} />}
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      {address.type === 'home' ? <Home size={16} className="text-green-500" /> : <Building size={16} className="text-green-500" />}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium" style={{ color: '#333333' }}>{address.title}</p>
+                      <p className="font-medium text-gray-900">{address.title}</p>
                       <p className="text-sm text-gray-600">{address.address}</p>
                       <p className="text-sm text-gray-600">{address.city} - {address.pincode}</p>
                     </div>
@@ -660,8 +678,7 @@ const Cart = () => {
                   setShowAddressModal(false);
                   setShowAddAddressModal(true);
                 }}
-                className="w-full p-4 text-center border-2 border-dashed rounded-lg hover:bg-gray-50"
-                style={{ borderColor: '#FF4C29', color: '#FF4C29' }}
+                className="w-full p-4 text-center text-green-500 border-2 border-green-500 border-dashed rounded-lg hover:bg-green-50"
               >
                 + Add New Address
               </button>
@@ -673,10 +690,10 @@ const Cart = () => {
       {/* Add New Address Modal */}
       {showAddAddressModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto shadow-lg">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold" style={{ color: '#333333' }}>Add New Address</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Add New Address</h3>
                 <button 
                   type="button" 
                   onClick={() => setShowAddAddressModal(false)} 
@@ -689,7 +706,7 @@ const Cart = () => {
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Address Type</label>
+                <label className="block mb-2 text-sm font-medium text-gray-900">Address Type</label>
                 <div className="flex space-x-4">
                   {[
                     { value: 'home', label: 'Home', icon: Home },
@@ -702,68 +719,68 @@ const Cart = () => {
                         value={value}
                         checked={newAddress.type === value}
                         onChange={(e) => setNewAddress({...newAddress, type: e.target.value})}
-                        style={{ accentColor: '#FF4C29' }}
+                        style={{ accentColor: '#28C76F' }}
                       />
-                      <Icon size={16} style={{ color: '#FF4C29' }} />
-                      <span>{label}</span>
+                      <Icon size={16} className="text-green-500" />
+                      <span className="text-gray-900">{label}</span>
                     </label>
                   ))}
                 </div>
               </div>
               
               <div>
-                <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Name</label>
+                <label className="block mb-2 text-sm font-medium text-gray-900">Name</label>
                 <input
                   type="text"
                   value={newAddress.title}
                   onChange={(e) => setNewAddress({...newAddress, title: e.target.value})}
                   placeholder="John Doe"
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
                 />
               </div>
               
               <div>
-                <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Complete Address *</label>
+                <label className="block mb-2 text-sm font-medium text-gray-900">Complete Address *</label>
                 <textarea
                   value={newAddress.address}
                   onChange={(e) => setNewAddress({...newAddress, address: e.target.value})}
                   placeholder="House/Flat no., Building name, Area"
-                  className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-green-200"
                   rows={3}
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>City</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-900">City</label>
                   <input
                     type="text"
                     value={newAddress.city}
                     onChange={(e) => setNewAddress({...newAddress, city: e.target.value})}
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
                   />
                 </div>
                 
                 <div>
-                  <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Pincode *</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-900">Pincode *</label>
                   <input
                     type="text"
                     value={newAddress.pincode}
                     onChange={(e) => setNewAddress({...newAddress, pincode: e.target.value})}
                     placeholder="700001"
-                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block mb-2 text-sm font-medium" style={{ color: '#333333' }}>Landmark (Optional)</label>
+                <label className="block mb-2 text-sm font-medium text-gray-900">Landmark (Optional)</label>
                 <input
                   type="text"
                   value={newAddress.landmark}
                   onChange={(e) => setNewAddress({...newAddress, landmark: e.target.value})}
                   placeholder="e.g., Near Metro Station"
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
                 />
               </div>
               
@@ -778,8 +795,7 @@ const Cart = () => {
                 <button 
                   type="button"
                   onClick={addNewAddress}
-                  className="flex-1 px-4 py-3 font-semibold text-white rounded-lg hover:shadow-lg"
-                  style={{ backgroundColor: '#FF4C29' }}
+                  className="flex-1 px-4 py-3 font-semibold text-white bg-green-500 rounded-full hover:shadow-lg hover:scale-105"
                 >
                   Save Address
                 </button>
