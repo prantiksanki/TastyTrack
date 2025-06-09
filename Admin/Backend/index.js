@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 81; 
 
 app.use(cors({
-  origin: 'http://localhost:5174', // Replace with your frontend origin
+  origin: 'https://luckeys-kitchen-admin.onrender.com/', // Replace with your frontend origin
   credentials: true,
 }));
 
