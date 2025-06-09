@@ -18,16 +18,10 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
     const email = localStorage.getItem('email');
     const isValid = localStorage.getItem('isValid');
 
-    // Log for debugging
-    console.log("email:", email, "isValid:", isValid);
-
-    // Use JSON.parse to reliably interpret the value
-    if (email && JSON.parse(isValid) === true) {
+    if (email && isValid === 'true' && isLoggedIn) {
       setShouldShowProfile(true);
-          // window.location.reload();
-
     }
-  }, []);
+  }, [isLoggedIn]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -61,7 +55,7 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
             {/* Cart */}
             <div className="relative">
               <button className="p-2 transition-colors rounded-full hover:bg-gray-100"
-              onClick={() => navigate('/cart')}>
+                onClick={() => navigate('/cart')}>
                 <ShoppingCart size={24} style={{ color: '#FF4C29' }} />
                 {cartCount > 0 && (
                   <span
@@ -85,7 +79,10 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
                 </button>
                 {showProfile && (
                   <div className="absolute right-0 w-48 mt-2 bg-white border rounded-lg shadow-lg">
-                    <button className="flex items-center w-full px-4 py-2 space-x-2 text-left hover:bg-gray-50">
+                    <button
+                      className="flex items-center w-full px-4 py-2 space-x-2 text-left hover:bg-gray-50"
+                      onClick={() => navigate('/profile')}
+                    >
                       <User size={16} />
                       <span>Profile</span>
                     </button>

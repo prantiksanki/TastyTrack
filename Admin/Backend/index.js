@@ -6,16 +6,20 @@ const Menu = require('./model/menu');
 const Coupon = require('./model/coupon');
 const Payment = require('./model/payment');
 const cors = require('cors');
+const dotenv = require('dotenv');
 
+dotenv.config();
+
+const Mongo_URI = process.env.MONGODB_URI;
 const app = express();
-const PORT = 81;
+const PORT = process.env.PORT || 81; 
 
 app.use(cors({
   origin: 'http://localhost:5174', // Replace with your frontend origin
   credentials: true,
 }));
 
-mongoose.connect('mongodb://localhost:27017/tastytrack')
+mongoose.connect(Mongo_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 

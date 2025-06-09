@@ -40,6 +40,7 @@ const Cart = () => {
     pincode: '',
     landmark: ''
   });
+  const baseURL = import.meta.env.VITE_BASE_URL;;
 
   const navigate = useNavigate();
 
@@ -56,7 +57,7 @@ const Cart = () => {
   // Fetch saved addresses
   useEffect(() => {
     const user = localStorage.getItem("email");
-    fetch(`http://localhost:80/address?user=${encodeURIComponent(user)}`, {
+    fetch(`${baseURL}/address?user=${encodeURIComponent(user)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ const Cart = () => {
   // Fetch cart items
   useEffect(() => {
     const email = localStorage.getItem('email');
-    fetch(`http://localhost:80/cart?user=${encodeURIComponent(email)}`, {
+    fetch(`${baseURL}/cart?user=${encodeURIComponent(email)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ const Cart = () => {
   useEffect(() => {
     const fetchPromoCodes = async () => {
       try {
-        const response = await fetch('http://localhost:80/coupons', {
+        const response = await fetch(`${baseURL}/coupons`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -183,7 +184,7 @@ const Cart = () => {
     console.log("New address data:", addressData);
 
     try {
-      const response = await fetch('http://localhost:80/add-address', {
+      const response = await fetch(`${baseURL}/add-address`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -251,7 +252,7 @@ const Cart = () => {
     setOrderPlacing(true);
 
     try {
-      const response = await fetch('http://localhost:80/order', {
+      const response = await fetch(`${baseURL}/order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

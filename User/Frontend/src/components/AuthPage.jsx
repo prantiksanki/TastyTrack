@@ -28,6 +28,7 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const baseURL = import.meta.env.VITE_BASE_URL;;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,7 +90,7 @@ const AuthPage = () => {
       : formData;
 
     try {
-      const response = await fetch(`http://localhost:80/${endpoint}`, {
+      const response = await fetch(`${baseURL}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

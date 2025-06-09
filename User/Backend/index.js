@@ -10,12 +10,15 @@ const Address = require("./models/address") ;
 const Cart = require("./models/cart") ; 
 const Order = require("./models/order") ; 
 const Coupon = require("./models/coupon") ; 
+// const dotenv = require('dotenv');
 
 
 dotenv.config();
 
+const mongodbURI = process.env.MONGO_URL;
+
 const app = express() ; 
-const port = 80 ||  process.env.PORT;
+const port = process.env.PORT || 80;
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
@@ -26,7 +29,7 @@ app.use(cors({
 }));
 
 
-mongoose.connect("mongodb://localhost:27017/tastytrack")
+mongoose.connect(mongodbURI)
 .then(() => console.log("Connected to MongoDB"))
 .catch((err) => console.log(err))
 
@@ -268,6 +271,35 @@ app.get('/coupons', async (req, res) => {
    res.json(coupons);
   } catch (error) {
     res.status(500).json({ message: 'Error creating coupon', error: error.message });
+  }
+});
+
+
+app.get("/user/:email", async (req, res) => {
+  const email = req.params.email;
+  const user = await User.findOne({ email });
+  console.log(user);
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404).json({ error: "User not found" });
+  }
+});
+
+app.get("/orders/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const orders = await Order.find({ user: user.email});
+    res.json(orders);
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

@@ -5,6 +5,7 @@ import FoodCard from "./FoodCard" ;
 import Footer from "./Footer" ;
 import AuthPage from "./AuthPage";
 import Cart from "./Cart";
+import Profile from "./Profile";
 
 
 
@@ -16,4 +17,5 @@ export
    Footer, 
    AuthPage, 
    Cart, 
+   Profile,
 }

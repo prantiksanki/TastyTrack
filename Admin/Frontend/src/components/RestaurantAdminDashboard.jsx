@@ -56,6 +56,7 @@ const RestaurantAdminDashboard = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [allOrders, setAllOrders] = useState([]);
   const [allOrderLength, setAllOrderLength] = useState(0);
+  const baseURL = 'http://localhost:81';
 
     
   // Fetch initial data 
@@ -64,41 +65,41 @@ const RestaurantAdminDashboard = () => {
       setIsLoading(true);
       try {
         // Fetch orders
-        const ordersResponse = await fetch('http://localhost:81/orders/today');
+        const ordersResponse = await fetch(`${baseURL}/orders/today`);
         if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
         const ordersData = await ordersResponse.json();
         setOrders(ordersData);
         setNewOrderCount(ordersData.length);
 
-        const allOrdersResponse = await fetch('http://localhost:81/ordersall');
+        const allOrdersResponse = await fetch(`${baseURL}/ordersall`);
         const allOrdersData = await allOrdersResponse.json();
         setAllOrders(allOrdersData);
         setAllOrderLength(allOrdersData.length);
 
         // Fetch menu items
-        const menuResponse = await fetch('http://localhost:81/menu');
+        const menuResponse = await fetch(`${baseURL}/menu`);
         if (!menuResponse.ok) throw new Error('Failed to fetch menu items');
         const menuData = await menuResponse.json();
         setMenuItems(menuData);
 
         // Fetch customers
       
-        const customersResponse = await fetch('http://localhost:81/customersDetails');
+        const customersResponse = await fetch(`${baseURL}/customersDetails`);
         if (!customersResponse.ok) throw new Error('Failed to fetch customers');
         const customersData = await customersResponse.json();
         setCustomers(customersData);
 
         // Fetch coupons
-        const couponsResponse = await fetch('http://localhost:81/coupons');
+        const couponsResponse = await fetch(`${baseURL}/coupons`);
         if (!couponsResponse.ok) throw new Error('Failed to fetch coupons');
         const couponsData = await couponsResponse.json();
         setCoupons(couponsData);
 
         // Fetch payments
-        const paymentsResponse = await fetch('http://localhost:81/payments');
-        if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
-        const paymentsData = await paymentsResponse.json();
-        setPayments(paymentsData);
+        // const paymentsResponse = await fetch('http://localhost:81/payments');
+        // if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
+        // const paymentsData = await paymentsResponse.json();
+        // setPayments(paymentsData);
       } catch (err) {
         setError(err.message);
         console.error('Error fetching initial data:', err);
@@ -109,6 +110,35 @@ const RestaurantAdminDashboard = () => {
 
     fetchInitialData();
   }, []);
+
+
+  useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      const response = await fetch(`${baseURL}/payments`);
+      if (!response.ok) throw new Error('Failed to fetch payments');
+      const latestPayments = await response.json();
+
+      setPayments((prevPayments) => {
+        const prevIds = new Set(prevPayments.map(p => p._id));
+        const latestIds = new Set(latestPayments.map(p => p._id));
+
+        // Update only if new payments exist or previous ones are removed/changed
+        const isChanged =
+          prevPayments.length !== latestPayments.length ||
+          latestPayments.some(p => !prevIds.has(p._id));
+
+        return isChanged ? latestPayments : prevPayments;
+      });
+    } catch (err) {
+      console.error('Error polling payments:', err);
+    }
+  }, 300000); // every 5 mints
+
+  return () => clearInterval(interval);
+}, []);
+
+
 
   // Get today's date in YYYY-MM-DD format
 const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -148,7 +178,7 @@ const dailyMenuStats = Object.entries(menuCountMap).map(([name, count]) => ({
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch('http://localhost:81/orders/new');
+        const response = await fetch(`${baseURL}/orders/new`);
         if (!response.ok) throw new Error('Failed to fetch new orders');
         const newOrders = await response.json();
         if (newOrders.length > 0) {
@@ -192,7 +222,7 @@ const updateOrderStatus = async (orderId, newStatus) => {
           order._id === orderId ? { ...order, isActive: newStatus === 'pending' } : order
         )
       );
-      const response = await fetch(`http://localhost:81/orders/${orderId}`, {
+      const response = await fetch(`${baseURL}/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus === 'pending' }),
@@ -235,7 +265,7 @@ const togglePaymentStatus = async (orderId) => {
         )
       );
 
-      const response = await fetch(`http://localhost:81/orders/${orderId}`, {
+      const response = await fetch(`${baseURL}/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPaid: !order.isPaid }),
@@ -264,8 +294,8 @@ const togglePaymentStatus = async (orderId) => {
   const toggleItemAvailability = async (itemId) => {
     try {
       const item = menuItems.find((i) => i._id === itemId);
-      const response = await fetch(`http://localhost:81/menu/${itemId}`, {
-        method: 'PATCH',
+      const response = await fetch(`${baseURL}/menu/${itemId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ available: !item.available }),
       });
@@ -292,7 +322,7 @@ const togglePaymentStatus = async (orderId) => {
       console.log(editingItem); 
 
       if (editingItem) {
-        const response = await fetch(`http://localhost:81/menu/${editingItem._id}`, {
+        const response = await fetch(`${baseURL}/menu/${editingItem._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formattedItemData),
@@ -310,7 +340,7 @@ const togglePaymentStatus = async (orderId) => {
           )
         );
       } else {
-        const response = await fetch('http://localhost:81/menu', {
+        const response = await fetch(`${baseURL}/menu`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formattedItemData),
@@ -335,7 +365,7 @@ const togglePaymentStatus = async (orderId) => {
 
   const deleteItem = async (itemId) => {
     try {
-      const response = await fetch(`http://localhost:81/menu/${itemId}`, {
+      const response = await fetch(`${baseURL}/menu/${itemId}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete menu item');
@@ -377,7 +407,7 @@ const addOrUpdateCoupon = async (couponData) => {
 
     if (couponData._id) {
       // Update coupon
-      response = await fetch(`http://localhost:81/coupons/${couponData._id}`, {
+      response = await fetch(`${baseURL}/coupons/${couponData._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -390,7 +420,7 @@ const addOrUpdateCoupon = async (couponData) => {
       );
     } else {
       // Add coupon
-      response = await fetch('http://localhost:81/coupons', {
+      response = await fetch(`${baseURL}/coupons`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -412,7 +442,7 @@ const addOrUpdateCoupon = async (couponData) => {
 
 const deleteCoupon = async (couponId) => {
   try {
-    const response = await fetch(`http://localhost:81/coupons/${couponId}`, {
+    const response = await fetch(`${baseURL}/coupons/${couponId}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to delete coupon');
@@ -947,7 +977,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
     };
 
     try {
-      const response = await fetch('http://localhost:81/payments', {
+      const response = await fetch(`${baseURL}/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData),
@@ -958,7 +988,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
       }
 
       // Fetch updated payments list after successful add
-      const paymentsResponse = await fetch('http://localhost:81/payments');
+      const paymentsResponse = await fetch(`${baseURL}/payments`);
       if (!paymentsResponse.ok) throw new Error('Failed to fetch payments');
       const paymentsData = await paymentsResponse.json();
 
@@ -1108,7 +1138,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               <h1 className="text-2xl font-bold text-gray-900">Restaurant Admin</h1>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* <div className="flex items-center gap-4">
               <button
                 onClick={() => setNewOrderCount(0)}
                 className="relative p-2 text-gray-600 hover:text-red-500"
@@ -1122,7 +1152,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
                 )}
               </button>
               <div className="w-8 h-8 bg-red-500 rounded-full"></div>
-            </div>
+            </div> */}
           </div>
         </div>
       </header>
