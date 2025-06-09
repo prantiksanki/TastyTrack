@@ -10,7 +10,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const Mongo_URI = process.env.MONGODB_URI;
+const Mongo_URI = process.env.MONGO_URL;
 const app = express();
 const PORT = process.env.PORT || 81; 
 
