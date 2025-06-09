@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   ShoppingCart, 
   User, 
@@ -19,58 +19,76 @@ import {
 } from 'lucide-react';
 import Lottie from 'lottie-react';
 import emptyAnimation from '../assets/Empty.json'; // Ensure this path is correct
+import { useNavigate } from "react-router-dom"; 
 
 const MainContent = ({ foods, onAddToCart }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const categories = ['All', 'Starters', 'Main Course', 'Desserts', 'Beverages'];
+  const navigate = useNavigate();
+  // Add a ref to the food grid section
+  const foodGridRef = useRef(null);
 
   const filteredFoods = selectedCategory === 'All' 
     ? foods 
     : foods.filter(food => food.category === selectedCategory);
 
-  // FoodCard component (copied from the second code for consistency)
+  // FoodCard component with enhanced hover effects (from previous update)
   const FoodCard = ({ food }) => {
     if (!food.available) return null;
 
     return (
-      <div className="overflow-hidden transition-all duration-300 bg-white shadow-lg rounded-2xl hover:shadow-xl group">
+      <div className="relative overflow-hidden transition-all duration-300 shadow-lg bg-white/80 backdrop-blur-sm rounded-2xl group hover:shadow-xl">
+        {/* Background Overlay on Hover */}
+        <div className="absolute inset-0 transition-opacity duration-500 opacity-0 bg-gradient-to-t from-green-500/10 to-transparent group-hover:opacity-100"></div>
+
+        {/* Floating Decorative Elements on Hover */}
+        <div className="absolute w-6 h-6 transition-opacity duration-500 bg-green-500 rounded-full opacity-0 top-2 left-2 group-hover:opacity-60"></div>
+        <div className="absolute w-4 h-4 transition-opacity duration-500 bg-red-500 rounded-full opacity-0 bottom-2 right-2 group-hover:opacity-60"></div>
+
+        {/* Image Section */}
         <div className="relative h-48 overflow-hidden">
           <img 
             src={food.image} 
             alt={food.name}
-            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110 group-hover:rotate-2"
           />
           {food.isPopular && (
-            <div className="absolute px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded-full top-3 left-3">
+            <div 
+              className="absolute px-2 py-1 text-xs font-semibold text-gray-900 transition-transform duration-300 bg-yellow-400 rounded-full top-3 left-3 group-hover:scale-105"
+            >
               Popular
             </div>
           )}
         </div>
         
+        {/* Content Section */}
         <div className="p-4">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-800">{food.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 transition-colors duration-300 group-hover:text-green-600">{food.name}</h3>
             <div className="flex items-center space-x-1">
-              <Star size={16} className="text-yellow-400 fill-current" />
+              <Star size={16} className="text-yellow-400 transition-transform duration-300 fill-yellow-400 group-hover:scale-125" />
               <span className="text-sm text-gray-600">{food.rating || '4.5'}</span>
             </div>
           </div>
           
-          <p className="mb-3 text-sm text-gray-600 line-clamp-2">{food.description || 'Delicious item'}</p>
+          <p className="mb-3 text-sm text-gray-600 transition-all duration-300 line-clamp-2 group-hover:text-gray-800 group-hover:line-clamp-none">
+            {food.description || 'Delicious item'}
+          </p>
           
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-1 text-sm text-gray-500">
-              <Clock size={14} />
+              <Clock size={14} className="transition-colors duration-300 group-hover:text-green-500" />
               <span>{food.time || '20 min'}</span>
             </div>
-            <div className="text-xl font-bold text-green-600">
+            <div className="text-xl font-bold text-green-500 transition-transform duration-300 group-hover:scale-110">
               ₹{food.price}
             </div>
           </div>
           
+          {/* Add to Cart Button */}
           <button
             onClick={() => onAddToCart(food)}
-            className="w-full py-2 font-semibold text-white transition-colors duration-300 bg-green-500 rounded-lg hover:bg-green-600"
+            className="w-full py-2 font-semibold text-white transition-all duration-300 bg-green-500 rounded-full hover:shadow-lg group-hover:scale-105 group-hover:bg-green-600"
           >
             Add to Cart
           </button>
@@ -79,49 +97,15 @@ const MainContent = ({ foods, onAddToCart }) => {
     );
   };
 
+  // Function to scroll to the food grid section
+  const scrollToFoodGrid = () => {
+    if (foodGridRef.current) {
+      foodGridRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f5f1e8 0%, #ede4d8 100%)' }}>
-      {/* Header */}
-      {/* <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-sm">
-        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16"> */}
-            {/* Logo */}
-            {/* <div className="flex items-center space-x-2">
-              <div className="flex items-center justify-center w-8 h-8 bg-green-500 rounded-lg">
-                <div className="w-4 h-4 bg-white rounded-sm"></div>
-              </div>
-              <span className="text-xl font-bold text-gray-900">Luckey's Kitchen</span>
-            </div> */}
-
-            {/* Navigation */}
-            {/* <nav className="hidden space-x-8 md:flex">
-              <a href="#" className="font-medium text-gray-900 transition-colors hover:text-green-600">Home</a>
-              <a href="#" className="text-gray-600 transition-colors hover:text-green-600">Menu</a>
-              <a href="#" className="text-gray-600 transition-colors hover:text-green-600">Service</a>
-              <a href="#" className="text-gray-600 transition-colors hover:text-green-600">Shop</a>
-            </nav> */}
-
-            {/* Search and Cart */}
-            {/* <div className="flex items-center space-x-4">
-              <div className="items-center hidden px-4 py-2 bg-white border rounded-full shadow-sm sm:flex">
-                <Search size={18} className="mr-2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search" 
-                  className="w-32 text-sm bg-transparent outline-none lg:w-48"
-                />
-              </div>
-              <div className="relative">
-                <ShoppingCart size={20} className="text-gray-600" />
-                <span className="absolute flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full -top-2 -right-2">
-                  0
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header> */}
-
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Decorative Elements */}
@@ -169,11 +153,17 @@ const MainContent = ({ foods, onAddToCart }) => {
               </p>
 
               <div className="space-y-4">
-                <button className="px-8 py-4 font-semibold text-white transition-colors duration-300 bg-green-500 rounded-full shadow-lg hover:bg-green-600 hover:shadow-xl">
+                <button 
+                  className="px-8 py-4 font-semibold text-white transition-colors duration-300 bg-green-500 rounded-full shadow-lg hover:bg-green-600 hover:shadow-xl"
+                  onClick={() => navigate('/cart')}
+                >
                   Make an order
                 </button>
 
-                <div className="flex items-center space-x-2 text-gray-700 transition-colors cursor-pointer hover:text-green-600">
+                <div 
+                  className="flex items-center space-x-2 text-gray-700 transition-colors cursor-pointer hover:text-green-600"
+                  onClick={scrollToFoodGrid} // Add scroll handler
+                >
                   <span className="font-medium">Specials for lunch</span>
                   <ArrowRight size={20} className="text-green-500" />
                 </div>
@@ -206,7 +196,10 @@ const MainContent = ({ foods, onAddToCart }) => {
       </section>
 
       {/* Categories and Food Grid */}
-      <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <section 
+        ref={foodGridRef} // Add ref to the section
+        className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8"
+      >
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           {categories.map(category => (
             <button
@@ -229,7 +222,7 @@ const MainContent = ({ foods, onAddToCart }) => {
             <div className="w-64 mx-auto sm:w-72">
               <Lottie animationData={emptyAnimation} loop autoplay />
             </div>
-            <p className="text-lg text-gray-500">No food items available in this category right now.</p>
+            <p className="text-lg text-gray-600">No food items available in this category right now.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
