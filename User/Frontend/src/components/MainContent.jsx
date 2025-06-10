@@ -26,7 +26,7 @@ const MainContent = ({ foods, onAddToCart }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const categories = ['All', 'Starters', 'Main Course', 'Desserts', 'Beverages'];
   const navigate = useNavigate();
-  const foodGridRef = useRef(null);
+  const foodGridRef = useRef(null)
 
   // Determine if loading (foods is undefined or empty)
   const isLoading = !foods || foods.length === 0;

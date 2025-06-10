@@ -32,6 +32,8 @@ const Cart = () => {
   const [orderPlacing, setOrderPlacing] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [validPromoCodes, setValidPromoCodes] = useState({});
+  const [toast, setToast] = useState({ type: '', message: '', visible: false });
+
   const [newAddress, setNewAddress] = useState({
     type: 'home',
     title: '',
@@ -243,49 +245,54 @@ const Cart = () => {
 
   const total = subtotal + deliveryFee + platformFee + gst - discount;
 
-  const placeOrder = async () => {
-    if (!selectedAddress) {
-      alert('Please select a delivery address');
+const placeOrder = async () => {
+  if (!selectedAddress) {
+    setToast({ type: 'error', message: 'Please select a delivery address.', visible: true });
+    setTimeout(() => setToast({ ...toast, visible: false }), 3000);
+    return;
+  }
+
+  setOrderPlacing(true);
+
+  try {
+    const response = await fetch(`${baseURL}/order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        user: localStorage.getItem('email'),
+        selectedAddress,
+        cartItems,
+        promoCode: appliedPromo ? appliedPromo.code : '',
+        paymentMethod,
+        total,
+        orderNote
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      setToast({ type: 'error', message: `Failed: ${errorData.message || response.statusText}`, visible: true });
+      setTimeout(() => setToast({ ...toast, visible: false }), 3000);
       return;
     }
 
-    setOrderPlacing(true);
+    const data = await response.json();
+    setToast({ type: 'success', message: 'Order placed successfully! 🎉', visible: true });
+    setTimeout(() => setToast({ ...toast, visible: false }), 3000);
+    console.log('Order response:', data);
+    handleCart();
+  } catch (error) {
+    console.error('Error placing order:', error);
+    setToast({ type: 'error', message: 'An error occurred while placing your order.', visible: true });
+    setTimeout(() => setToast({ ...toast, visible: false }), 3000);
+  } finally {
+    setOrderPlacing(false);
+  }
+};
 
-    try {
-      const response = await fetch(`${baseURL}/order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          user: localStorage.getItem('email'),
-          selectedAddress,
-          cartItems,
-          promoCode: appliedPromo ? appliedPromo.code : '',
-          paymentMethod,
-          total,
-          orderNote
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(`Failed to place order: ${errorData.message || response.statusText}`);
-        return;
-      }
-
-      const data = await response.json();
-      alert('Order placed successfully! 🎉');
-      console.log('Order response:', data);
-      handleCart();
-    } catch (error) {
-      console.error('Error placing order:', error);
-      alert('An error occurred while placing your order. Please try again.');
-    } finally {
-      setOrderPlacing(false);
-    }
-  };
 
   const goBack = () => {
     navigate("/");
@@ -687,6 +694,17 @@ const Cart = () => {
         </div>
       )}
 
+      {toast.visible && (
+          <div
+            className={`fixed bottom-6 left-1/2 z-50 transform -translate-x-1/2 px-4 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${
+              toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          >
+            {toast.message}
+          </div>
+        )}
+
+
       {/* Add New Address Modal */}
       {showAddAddressModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
@@ -803,6 +821,7 @@ const Cart = () => {
             </div>
           </div>
         </div>
+        
       )}
     </div>
   );
