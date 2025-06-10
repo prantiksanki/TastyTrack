@@ -555,88 +555,94 @@ const deleteCoupon = async (couponId) => {
 
 const OrderCard = ({ order }) => (
   <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-    <div className="flex items-start justify-between mb-3">
-      <div>
-        <h3 className="font-bold text-gray-800">Order ID: {order._id}</h3>
-        <p className="text-sm text-gray-500">{order.selectedAddress?.title}</p>
-        <p className="text-sm text-gray-600">{order.user}</p>
-        <p className="text-sm text-gray-500">{order.selectedAddress?.address}</p>
-        <p className="text-sm text-gray-500">{order.selectedAddress?.pincode}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-lg font-bold text-red-500">₹{order.total}</p>
-        <span
-          className={`px-2 py-1 rounded-full text-xs ${
-            order.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-          }`}
-        >
-          {order.isActive ? 'Pending' : 'Delivered'}
-        </span>
-      </div>
+  <div className="flex items-start justify-between mb-3">
+    <div>
+      <h3 className="font-bold text-gray-800">Order ID: {order._id}</h3>
+      <p className="text-sm text-gray-400">
+        {new Date(order.createdAt).toLocaleString()}
+      </p>
+      <p className="text-sm text-gray-500">{order.selectedAddress?.title}</p>
+      <p className="text-sm text-gray-600">{order.user}</p>
+      <p className="text-sm text-gray-500">{order.selectedAddress?.address}</p>
+      <p className="text-sm text-gray-500">{order.selectedAddress?.pincode}</p>
     </div>
-
-    <div className="mb-3 space-y-2">
-      {order.cartItems.map((item, idx) => (
-        <div key={idx} className="flex justify-between pb-1 text-sm border-b">
-          <p>
-            {item.name} x{item.quantity}
-          </p>
-          <p>₹{item.price * item.quantity}</p>
-        </div>
-      ))}
-    </div>
-    {order.orderNote && (
-      <div className="mb-3">
-        <p className="text-sm text-gray-600">
-          <strong>Note:</strong> {order.orderNote}
-        </p>
-      </div>
-    )}
-    {order.promoCode && (
-      <div className="mb-3">
-        <p className="text-sm text-gray-600">
-          <strong>Promo Code:</strong> {order.promoCode}
-        </p>
-      </div>
-    )}
-
-    <div className="flex flex-wrap gap-2 mt-3">
-      <button
-        onClick={() => {
-          setSelectedOrder(order);
-          setShowOrderModal(true);
-        }}
-        className="flex-1 px-3 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
-        aria-label={`View details for order ${order._id}`}
+    <div className="text-right">
+      <p className="text-lg font-bold text-red-500">₹{order.total}</p>
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          order.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+        }`}
       >
-        View Details
-      </button>
-
-      {order.isActive && (
-        <button
-          onClick={() => updateOrderStatus(order._id, 'delivered')}
-          disabled={isUpdating}
-          className={`flex-1 px-3 py-2 text-sm text-white bg-green-500 rounded hover:bg-green-600 ${
-            isUpdating ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-          aria-label={`Mark order ${order._id} as delivered`}
-        >
-          Mark Delivered
-        </button>
-      )}
-
-      <button
-        onClick={() => togglePaymentStatus(order._id)}
-        disabled={isUpdating}
-        className={`px-3 py-2 rounded text-sm ${
-          order.isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-        aria-label={`Toggle payment status for order ${order._id}`}
-      >
-        {order.isPaid ? 'Paid' : 'Unpaid'}
-      </button>
+        {order.isActive ? 'Pending' : 'Delivered'}
+      </span>
     </div>
   </div>
+
+  <div className="mb-3 space-y-2">
+    {order.cartItems.map((item, idx) => (
+      <div key={idx} className="flex justify-between pb-1 text-sm border-b">
+        <p>
+          {item.name} x{item.quantity}
+        </p>
+        <p>₹{item.price * item.quantity}</p>
+      </div>
+    ))}
+  </div>
+
+  {order.orderNote && (
+    <div className="mb-3">
+      <p className="text-sm text-gray-600">
+        <strong>Note:</strong> {order.orderNote}
+      </p>
+    </div>
+  )}
+
+  {order.promoCode && (
+    <div className="mb-3">
+      <p className="text-sm text-gray-600">
+        <strong>Promo Code:</strong> {order.promoCode}
+      </p>
+    </div>
+  )}
+
+  <div className="flex flex-wrap gap-2 mt-3">
+    <button
+      onClick={() => {
+        setSelectedOrder(order);
+        setShowOrderModal(true);
+      }}
+      className="flex-1 px-3 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+      aria-label={`View details for order ${order._id}`}
+    >
+      View Details
+    </button>
+
+    {order.isActive && (
+      <button
+        onClick={() => updateOrderStatus(order._id, 'delivered')}
+        disabled={isUpdating}
+        className={`flex-1 px-3 py-2 text-sm text-white bg-green-500 rounded hover:bg-green-600 ${
+          isUpdating ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+        aria-label={`Mark order ${order._id} as delivered`}
+      >
+        Mark Delivered
+      </button>
+    )}
+
+    <button
+      onClick={() => togglePaymentStatus(order._id)}
+      disabled={isUpdating}
+      className={`px-3 py-2 rounded text-sm ${
+        order.isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+      } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+      aria-label={`Toggle payment status for order ${order._id}`}
+    >
+      {order.isPaid ? 'Paid' : 'Unpaid'}
+    </button>
+  </div>
+</div>
+
 );
 
 
