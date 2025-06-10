@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
-const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
+const Navbar = ({ cartCount, isLoggedIn }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [shouldShowProfile, setShouldShowProfile] = useState(false);
   const navigate = useNavigate();
@@ -43,17 +43,19 @@ const Navbar = ({ cartCount, isLoggedIn, onCall }) => {
             </h1>
           </div>
 
+
+
           {/* Navigation Items */}
           <div className="flex items-center space-x-4">
             {/* Call Button */}
-            <button
-              onClick={onCall}
+            <a
+              href="tel:+918170841976"
               className="flex items-center px-4 py-2 space-x-2 font-medium text-white transition-all duration-300 rounded-full shadow-md hover:shadow-lg hover:bg-green-600"
               style={{ backgroundColor: '#28C76F' }}
             >
               <Phone size={18} />
               <span className="hidden sm:inline">Call Restaurant</span>
-            </button>
+            </a>
 
             {/* Cart */}
             <div className="relative">
