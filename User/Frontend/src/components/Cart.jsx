@@ -33,6 +33,8 @@ const Cart = () => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [validPromoCodes, setValidPromoCodes] = useState({});
   const [toast, setToast] = useState({ type: '', message: '', visible: false });
+  const [showConfirmBox, setShowConfirmBox] = useState(false);
+
 
   const [newAddress, setNewAddress] = useState({
     type: 'home',
@@ -612,21 +614,29 @@ const placeOrder = async () => {
               </div>
 
               {/* Place Order Button */}
-              <button
-                type="button"
-                onClick={placeOrder}
-                disabled={orderPlacing}
-                className="w-full py-4 text-lg font-bold text-white transition-all bg-green-500 rounded-full hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {orderPlacing ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-5 h-5 border-b-2 border-white rounded-full animate-spin"></div>
-                    <span>Placing Order...</span>
-                  </div>
-                ) : (
-                  `Place Order • ₹${total}`
-                )}
-              </button>
+           <button
+              type="button"
+              onClick={() => {
+                if (!selectedAddress) {
+                  setToast({ type: 'error', message: 'Please select a delivery address.', visible: true });
+                  setTimeout(() => setToast({ ...toast, visible: false }), 3000);
+                  return;
+                }
+                setShowConfirmBox(true);
+              }}
+              disabled={orderPlacing}
+              className="w-full py-4 text-lg font-bold text-white transition-all bg-green-500 rounded-full hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {orderPlacing ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-5 h-5 border-b-2 border-white rounded-full animate-spin"></div>
+                  <span>Placing Order...</span>
+                </div>
+              ) : (
+                `Place Order • ₹${total}`
+              )}
+            </button>
+
               
               <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
                 <Clock size={16} />
@@ -694,15 +704,43 @@ const placeOrder = async () => {
         </div>
       )}
 
-      {toast.visible && (
-          <div
-            className={`fixed bottom-6 left-1/2 z-50 transform -translate-x-1/2 px-4 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${
-              toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            }`}
-          >
-            {toast.message}
+    {toast.visible && (
+        <div
+          className={`fixed top-6 left-1/2 z-50 transform -translate-x-1/2 px-6 py-4 rounded-lg shadow-xl text-white text-base transition-all duration-500 ${
+            toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
+
+        {showConfirmBox && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-sm p-6 text-center bg-white rounded-lg shadow-xl">
+              <h3 className="mb-3 text-lg font-semibold text-gray-800">Confirm Your Order</h3>
+              <p className="mb-6 text-sm text-gray-600">Do you want to proceed with this order?</p>
+              <div className="flex justify-between gap-4">
+                <button
+                  className="w-full px-4 py-2 font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                  onClick={() => setShowConfirmBox(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="w-full px-4 py-2 font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                  onClick={() => {
+                    setShowConfirmBox(false);
+                    placeOrder(); // Actual order function
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
           </div>
         )}
+
 
 
       {/* Add New Address Modal */}
