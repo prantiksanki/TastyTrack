@@ -28,6 +28,8 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { format } from 'date-fns';
 
 const RestaurantAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -1936,151 +1938,337 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
 
       
 
-      {showCustomerModal && selectedCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Customer Details - {selectedCustomer.name}</h2>
-              <button
-                onClick={() => setShowCustomerModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-                aria-label="Close customer modal"
-              >
-                <X size={24} />
-              </button>
-            </div>
+     {showCustomerModal && selectedCustomer && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Customer Details - {selectedCustomer.name}</h2>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => {
+              const doc = new jsPDF();
+              const pageWidth = doc.internal.pageSize.getWidth();
+              const margin = 15;
+              let yPos = 20;
+              const pageHeight = doc.internal.pageSize.getHeight();
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="p-4 rounded-lg bg-gray-50">
-                  <h3 className="mb-3 font-semibold">Contact Information</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Phone size={16} />
-                      <span>{selectedCustomer.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail size={16} />
-                      <span>{selectedCustomer.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin size={16} />
-                      <span>{selectedCustomer.address}</span>
-                    </div>
-                  </div>
-                </div>
+              // Helper: Add text with wrapping and styling
+              const addText = (text, x, y, options = {}) => {
+                const fontSize = options.fontSize || 12;
+                const fontStyle = options.fontStyle || 'normal';
+                doc.setFont('helvetica', fontStyle);
+                doc.setFontSize(fontSize);
+                doc.text(text, x, y, { maxWidth: pageWidth - 2 * margin });
+                return y + (options.lineHeight || fontSize * 1.2);
+              };
 
-                <div className="p-4 rounded-lg bg-gray-50">
-                  <h3 className="mb-3 font-semibold">Order Statistics</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Total Orders:</span>
-                      <span className="font-semibold">{selectedCustomer.totalOrders}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Total Spent:</span>
-                      <span className="font-semibold">₹{selectedCustomer.totalSpent}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Pending Amount:</span>
-                      <span
-                        className={`font-semibold ${
-                          selectedCustomer.pendingAmount > 0 ? 'text-red-600' : 'text-green-600'
-                        }`}
-                      >
-                        ₹{selectedCustomer.pendingAmount}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              // Helper: Add horizontal line separator
+              const addSeparator = (y) => {
+                doc.setDrawColor(200);
+                doc.setLineWidth(0.5);
+                doc.line(margin, y, pageWidth - margin, y);
+                return y + 5;
+              };
 
-              <div>
-                <h3 className="mb-3 font-semibold">Recent Orders</h3>
-                <div className="space-y-2">
-                {allOrders
-  .filter((order) => order.user === selectedCustomer.email)
-  .map((order) => (
-    <div
-      key={order._id}
-      className="p-4 mb-6 rounded-lg shadow-sm bg-gray-50"
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <span className="font-medium">Order ID: {order._id}</span>
-          <span className="ml-2 text-gray-600">
-            {new Date(order.createdAt).toLocaleString('en-IN', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            })}
-          </span>
-        </div>
-        <div className="text-right">
-          <p className="font-semibold">₹{order.total}</p>
-          <span
-            className={`px-2 py-1 rounded-full text-xs ${
-              order.isPaid
-                ? 'bg-green-100 text-green-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}
+              // Helper: Check for page break
+              const checkPageBreak = (currentY, additionalSpace = 20) => {
+                if (currentY + additionalSpace > pageHeight - margin) {
+                  doc.addPage();
+                  return 20;
+                }
+                return currentY;
+              };
+
+              // Header: Customer Details
+              yPos = addText(`Customer Order History - ${selectedCustomer.name}`, margin, yPos, {
+                fontSize: 18,
+                fontStyle: 'bold',
+                lineHeight: 20,
+              });
+              yPos = addSeparator(yPos);
+
+              // Section: Contact Information
+              yPos = addText('Contact Information', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+              yPos = addText(`Phone: ${selectedCustomer.phone}`, margin, yPos);
+              yPos = addText(`Email: ${selectedCustomer.email}`, margin, yPos);
+              yPos = addText(`Address: ${selectedCustomer.address}`, margin, yPos);
+              yPos = checkPageBreak(yPos, 20);
+              yPos = addText('', margin, yPos); // Spacer
+
+              // Section: Order Statistics
+              yPos = addText('Order Statistics', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+              yPos = addText(`Total Orders: ${selectedCustomer.totalOrders}`, margin, yPos);
+              yPos = addText(`Total Spent: ₹${selectedCustomer.totalSpent.toFixed(2)}`, margin, yPos);
+              yPos = addText(
+                `Pending Amount: ₹${selectedCustomer.pendingAmount.toFixed(2)}`,
+                margin,
+                yPos
+              );
+              yPos = checkPageBreak(yPos, 20);
+              yPos = addSeparator(yPos);
+
+              // Section: Orders by Month
+              const groupedOrders = allOrders
+                .filter((order) => order.user === selectedCustomer.email)
+                .reduce((acc, order) => {
+                  const date = new Date(order.createdAt);
+                  const monthYear = format(date, 'MMMM yyyy');
+                  if (!acc[monthYear]) {
+                    acc[monthYear] = [];
+                  }
+                  acc[monthYear].push(order);
+                  return acc;
+                }, {});
+
+              Object.entries(groupedOrders).forEach(([monthYear, orders], monthIndex) => {
+                yPos = checkPageBreak(yPos, 30);
+                yPos = addText(monthYear, margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+                yPos += 5;
+
+                orders.forEach((order, orderIndex) => {
+                  yPos = checkPageBreak(yPos, 50);
+                  yPos = addText(`Order ID: ${order._id}`, margin, yPos, { fontStyle: 'bold' });
+                  yPos = addText(
+                    `Date: ${new Date(order.createdAt).toLocaleString('en-IN', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}`,
+                    margin + 5,
+                    yPos
+                  );
+                  yPos = addText(`Total: ₹${order.total.toFixed(2)}`, margin + 5, yPos);
+                  yPos = addText(`Status: ${order.isPaid ? 'Paid' : 'Pending'}`, margin + 5, yPos);
+
+                  yPos = addText('Delivery Address:', margin + 5, yPos, { fontStyle: 'italic' });
+                  yPos = addText(
+                    `${order.selectedAddress?.title || 'N/A'}`,
+                    margin + 10,
+                    yPos
+                  );
+                  yPos = addText(
+                    `${order.selectedAddress?.address || ''}, ${order.selectedAddress?.city || ''} - ${order.selectedAddress?.pincode || ''}`,
+                    margin + 10,
+                    yPos
+                  );
+                  yPos = addText(
+                    `Landmark: ${order.selectedAddress?.landmark || 'None'}`,
+                    margin + 10,
+                    yPos
+                  );
+
+                  yPos = addText('Payment Details:', margin + 5, yPos, { fontStyle: 'italic' });
+                  yPos = addText(
+                    `Payment Method: ${order.paymentMethod || 'N/A'}`,
+                    margin + 10,
+                    yPos
+                  );
+                  if (order.promoCode) {
+                    yPos = addText(`Promo Code: ${order.promoCode}`, margin + 10, yPos);
+                  }
+                  if (order.orderNote) {
+                    yPos = addText(`Note: ${order.orderNote}`, margin + 10, yPos);
+                  }
+
+                  yPos = addText('Items:', margin + 5, yPos, { fontStyle: 'italic' });
+                  order.cartItems.forEach((item, index) => {
+                    yPos = checkPageBreak(yPos, 30);
+                    yPos = addText(
+                      `${index + 1}. ${item.name}`,
+                      margin + 10,
+                      yPos,
+                      { fontStyle: 'bold' }
+                    );
+                    yPos = addText(`Quantity: ${item.quantity}`, margin + 15, yPos);
+                    yPos = addText(`Price: ₹${item.price.toFixed(2)}`, margin + 15, yPos);
+                    if (item.description) {
+                      yPos = addText(`Description: ${item.description}`, margin + 15, yPos);
+                    }
+                  });
+
+                  // Add separator after each order (except the last order in the last month)
+                  if (
+                    orderIndex < orders.length - 1 ||
+                    monthIndex < Object.keys(groupedOrders).length - 1
+                  ) {
+                    yPos = checkPageBreak(yPos, 10);
+                    yPos = addSeparator(yPos);
+                  }
+                });
+              });
+
+              // Footer: Add page numbers
+              const pageCount = doc.internal.getNumberOfPages();
+              for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(
+                  `Page ${i} of ${pageCount}`,
+                  pageWidth - margin - 20,
+                  pageHeight - 10,
+                  { align: 'right' }
+                );
+              }
+
+              doc.save(`${selectedCustomer.name}_Order_History.pdf`);
+            }}
+            className="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
           >
-            {order.isPaid ? 'Paid' : 'Pending'}
-          </span>
+            Download PDF Report
+          </button>
+          <button
+            onClick={() => setShowCustomerModal(false)}
+            className="text-gray-500 hover:text-gray-700"
+            aria-label="Close customer modal"
+          >
+            <X size={24} />
+          </button>
         </div>
       </div>
 
-      {/* Address */}
-      <div className="mb-2 text-sm text-gray-700">
-        <strong>Deliver to:</strong> {order.selectedAddress?.title} <br />
-        {order.selectedAddress?.address}, {order.selectedAddress?.city} - {order.selectedAddress?.pincode}
-        <br />
-        <span className="text-xs italic">
-          Landmark: {order.selectedAddress?.landmark}
-        </span>
-      </div>
-
-      {/* Payment and Promo */}
-      <div className="mb-2 space-y-1 text-sm text-gray-700">
-        <div><strong>Payment Method:</strong> {order.paymentMethod}</div>
-        {order.promoCode && (
-          <div><strong>Promo Code:</strong> {order.promoCode}</div>
-        )}
-        {order.orderNote && (
-          <div><strong>Note:</strong> {order.orderNote}</div>
-        )}
-      </div>
-
-      {/* Cart Items */}
-      <div className="mt-4 space-y-2">
-        {order.cartItems.map((item, index) => (
-          <div key={index} className="flex gap-4 p-3 bg-white border rounded-md">
-            <img
-              src={item.image}
-              alt={item.name}
-              className="object-cover w-16 h-16 rounded"
-            />
-            <div>
-              <p className="text-sm font-medium">{item.name}</p>
-              <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-              <p className="text-sm text-gray-600">Price: ₹{item.price}</p>
-              {item.description && (
-                <p className="text-sm italic text-gray-500">{item.description}</p>
-              )}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="p-4 rounded-lg bg-gray-50">
+            <h3 className="mb-3 font-semibold">Contact Information</h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Phone size={16} />
+                <span>{selectedCustomer.phone}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail size={16} />
+                <span>{selectedCustomer.email}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin size={16} />
+                <span>{selectedCustomer.address}</span>
+              </div>
             </div>
           </div>
-        ))}
+
+          <div className="p-4 rounded-lg bg-gray-50">
+            <h3 className="mb-3 font-semibold">Order Statistics</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Total Orders:</span>
+                <span className="font-semibold">{selectedCustomer.totalOrders}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Spent:</span>
+                <span className="font-semibold">₹{selectedCustomer.totalSpent}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Pending Amount:</span>
+                <span
+                  className={`font-semibold ${
+                    selectedCustomer.pendingAmount > 0 ? 'text-red-600' : 'text-green-600'
+                  }`}
+                >
+                  ₹{selectedCustomer.pendingAmount}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-3 font-semibold">Recent Orders</h3>
+          {(() => {
+            const groupedOrders = allOrders
+              .filter((order) => order.user === selectedCustomer.email)
+              .reduce((acc, order) => {
+                const date = new Date(order.createdAt);
+                const monthYear = format(date, 'MMMM yyyy');
+                if (!acc[monthYear]) {
+                  acc[monthYear] = [];
+                }
+                acc[monthYear].push(order);
+                return acc;
+              }, {});
+
+            return Object.entries(groupedOrders).map(([monthYear, orders]) => (
+              <div key={monthYear} className="mb-6">
+                <h4 className="mb-2 text-lg font-medium">{monthYear}</h4>
+                <div className="space-y-2">
+                  {orders.map((order) => (
+                    <div
+                      key={order._id}
+                      className="p-4 rounded-lg shadow-sm bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="font-medium">Order ID: {order._id}</span>
+                          <span className="ml-2 text-gray-600">
+                            {new Date(order.createdAt).toLocaleString('en-IN', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">₹{order.total}</p>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              order.isPaid
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {order.isPaid ? 'Paid' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mb-2 text-sm text-gray-700">
+                        <strong>Deliver to:</strong> {order.selectedAddress?.title} <br />
+                        {order.selectedAddress?.address}, {order.selectedAddress?.city} - {order.selectedAddress?.pincode}
+                        <br />
+                        <span className="text-xs italic">
+                          Landmark: ${order.selectedAddress?.landmark}
+                        </span>
+                      </div>
+
+                      <div className="mb-2 space-y-1 text-sm text-gray-700">
+                        <div><strong>Payment Method:</strong> {order.paymentMethod}</div>
+                        {order.promoCode && (
+                          <div><strong>Promo Code:</strong> ${order.promoCode}</div>
+                        )}
+                        {order.orderNote && (
+                          <div><strong>Note:</strong> ${order.orderNote}</div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        {order.cartItems.map((item, index) => (
+                          <div key={index} className="flex gap-4 p-3 bg-white border rounded-md">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="object-cover w-16 h-16 rounded"
+                            />
+                            <div>
+                              <p className="text-sm font-medium">{item.name}</p>
+                              <p className="text-sm text-gray-600">Quantity: ${item.quantity}</p>
+                              <p className="text-sm text-gray-600">Price: ₹${item.price}</p>
+                              {item.description && (
+                                <p className="text-sm italic text-gray-500">{item.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
       </div>
     </div>
-))}
+  </div>
+)}
 
-
-
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
 {showItemModal && <ItemModal />}
 {showCouponModal && (
