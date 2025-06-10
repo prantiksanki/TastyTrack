@@ -49,7 +49,7 @@ const Navbar = ({ cartCount, isLoggedIn }) => {
           <div className="flex items-center space-x-4">
             {/* Call Button */}
             <a
-              href="tel:+918170841976"
+              href="tel:8170841976"
               className="flex items-center px-4 py-2 space-x-2 font-medium text-white transition-all duration-300 rounded-full shadow-md hover:shadow-lg hover:bg-green-600"
               style={{ backgroundColor: '#28C76F' }}
             >
