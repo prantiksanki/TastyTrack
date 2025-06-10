@@ -329,7 +329,7 @@ const ProfileSection = () => {
                               </h4>
                               <p className="text-sm text-gray-600 capitalize">{order.paymentMethod.toUpperCase()}</p>
                               <p className="text-sm text-gray-500">
-                                Status: {order.isPaid ? 'Paid' : 'Pending'}
+                                Status: {order.isActive ? 'Pending' : 'Delivered'}
                               </p>
                             </div>
 
