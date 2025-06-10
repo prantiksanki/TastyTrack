@@ -1209,8 +1209,30 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
           </div>
         )}
         {isLoading && (
-          <div className="p-4 text-center text-gray-600">Loading...</div>
-        )}
+  <div className="flex flex-col items-center justify-center p-4 text-gray-600 animate-pulse">
+    <svg
+      className="w-6 h-6 mb-2 text-blue-500 animate-spin"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+      ></path>
+    </svg>
+    <p className="text-sm font-medium">Loading...</p>
+  </div>
+)}
+
 
         <div className="flex gap-8">
           {/* Sidebar */}
@@ -1499,7 +1521,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
                           <p className="font-semibold">₹{customer.totalSpent}</p>
                         </div>
                       </div>
-
+                          
                       {customer.pendingAmount > 0 && (
                         <div className="p-3 mt-4 rounded-lg bg-red-50">
                           <p className="text-sm text-red-800">
@@ -1814,6 +1836,15 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               <span>{selectedOrder.selectedAddress?.pincode}</span>
             </div>
             <div className="flex items-center gap-2">
+              <Calendar size={16} />
+              <span>
+                {new Date(selectedOrder.createdAt).toLocaleString('en-IN', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
               <CreditCard size={16} />
               <span>Payment Method: {selectedOrder.paymentMethod}</span>
             </div>
@@ -1863,7 +1894,10 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               value={selectedOrder.isActive ? 'pending' : 'delivered'}
               onChange={(e) => {
                 updateOrderStatus(selectedOrder._id, e.target.value);
-                setSelectedOrder({ ...selectedOrder, isActive: e.target.value === 'pending' });
+                setSelectedOrder({
+                  ...selectedOrder,
+                  isActive: e.target.value === 'pending',
+                });
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             >
@@ -1894,6 +1928,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
     </div>
   </div>
 )}
+
 
 
 
@@ -1963,75 +1998,81 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               <div>
                 <h3 className="mb-3 font-semibold">Recent Orders</h3>
                 <div className="space-y-2">
-                      {allOrders
-                        .filter((order) => order.user === selectedCustomer.email)
-                        .map((order) => (
-                          <div
-                            key={order._id}
-                            className="p-4 mb-6 rounded-lg shadow-sm bg-gray-50"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <span className="font-medium">Order ID: {order._id}</span>
-                                <span className="ml-2 text-gray-600">
-                                  {new Date(order.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold">₹{order.total}</p>
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs ${
-                                    order.isPaid
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  }`}
-                                >
-                                  {order.isPaid ? 'Paid' : 'Pending'}
-                                </span>
-                              </div>
-                            </div>
+                {allOrders
+  .filter((order) => order.user === selectedCustomer.email)
+  .map((order) => (
+    <div
+      key={order._id}
+      className="p-4 mb-6 rounded-lg shadow-sm bg-gray-50"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <span className="font-medium">Order ID: {order._id}</span>
+          <span className="ml-2 text-gray-600">
+            {new Date(order.createdAt).toLocaleString('en-IN', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}
+          </span>
+        </div>
+        <div className="text-right">
+          <p className="font-semibold">₹{order.total}</p>
+          <span
+            className={`px-2 py-1 rounded-full text-xs ${
+              order.isPaid
+                ? 'bg-green-100 text-green-800'
+                : 'bg-yellow-100 text-yellow-800'
+            }`}
+          >
+            {order.isPaid ? 'Paid' : 'Pending'}
+          </span>
+        </div>
+      </div>
 
-                            {/* Order Status */}
-                            {/* <div className="mb-2 text-sm text-gray-700">
-                              <strong>Status:</strong> {order.status}
-                            </div> */}
+      {/* Address */}
+      <div className="mb-2 text-sm text-gray-700">
+        <strong>Deliver to:</strong> {order.selectedAddress?.title} <br />
+        {order.selectedAddress?.address}, {order.selectedAddress?.city} - {order.selectedAddress?.pincode}
+        <br />
+        <span className="text-xs italic">
+          Landmark: {order.selectedAddress?.landmark}
+        </span>
+      </div>
 
-                            {/* Address */}
-                            <div className="mb-2 text-sm text-gray-700">
-                              <strong>Deliver to:</strong> {order.selectedAddress?.title} <br />
-                              {order.selectedAddress?.address}, {order.selectedAddress?.city} - {order.selectedAddress?.pincode}<br />
-                              <span className="text-xs italic">Landmark: {order.selectedAddress?.landmark}</span>
-                            </div>
+      {/* Payment and Promo */}
+      <div className="mb-2 space-y-1 text-sm text-gray-700">
+        <div><strong>Payment Method:</strong> {order.paymentMethod}</div>
+        {order.promoCode && (
+          <div><strong>Promo Code:</strong> {order.promoCode}</div>
+        )}
+        {order.orderNote && (
+          <div><strong>Note:</strong> {order.orderNote}</div>
+        )}
+      </div>
 
-                            {/* Payment and Promo */}
-                            <div className="mb-2 space-y-1 text-sm text-gray-700">
-                              <div><strong>Payment Method:</strong> {order.paymentMethod}</div>
-                              {order.promoCode && <div><strong>Promo Code:</strong> {order.promoCode}</div>}
-                              {order.orderNote && <div><strong>Note:</strong> {order.orderNote}</div>}
-                            </div>
+      {/* Cart Items */}
+      <div className="mt-4 space-y-2">
+        {order.cartItems.map((item, index) => (
+          <div key={index} className="flex gap-4 p-3 bg-white border rounded-md">
+            <img
+              src={item.image}
+              alt={item.name}
+              className="object-cover w-16 h-16 rounded"
+            />
+            <div>
+              <p className="text-sm font-medium">{item.name}</p>
+              <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+              <p className="text-sm text-gray-600">Price: ₹{item.price}</p>
+              {item.description && (
+                <p className="text-sm italic text-gray-500">{item.description}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+))}
 
-                            {/* Cart Items */}
-                            <div className="mt-4 space-y-2">
-                              {order.cartItems.map((item, index) => (
-                                <div key={index} className="flex gap-4 p-3 bg-white border rounded-md">
-                                  <img
-                                    src={item.image}
-                                    alt={item.name}
-                                    className="object-cover w-16 h-16 rounded"
-                                  />
-                                  <div>
-                                    <p className="text-sm font-medium">{item.name}</p>
-                                    <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                                    <p className="text-sm text-gray-600">Price: ₹{item.price}</p>
-                                    {item.description && (
-                                      <p className="text-sm italic text-gray-500">{item.description}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                      ))}
 
 
                 </div>
