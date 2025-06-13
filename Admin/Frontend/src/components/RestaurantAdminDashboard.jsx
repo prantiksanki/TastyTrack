@@ -1942,7 +1942,7 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
     <div className="w-full max-w-2xl max-h-screen p-6 overflow-y-auto bg-white rounded-lg">
       <div className="flex flex-col items-start justify-between gap-4 mb-6 sm:flex-row sm:items-center">
-        <h2 className="text-lg font-bold sm:text-xl">Customer Details - {selectedCustomer.name || 'Unknown'}</h2>
+        <h2 className="text-lg font-bold p-7 sm:text">Customer Details - {selectedCustomer.name || 'Unknown'}</h2>
         <button
           onClick={() => setShowCustomerModal(false)}
           className="text-gray-500 hover:text-gray-700"
