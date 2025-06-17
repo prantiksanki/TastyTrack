@@ -176,39 +176,49 @@ const dailyMenuStats = Object.entries(menuCountMap).map(([name, count]) => ({
   }, [error]);
 
 
-
-  
-  // Poll for new orders
 useEffect(() => {
   let interval;
+  const notificationSound = new Audio('../public/notify.mp3');
+  notificationSound.load(); // Preload the audio
 
   const startPolling = () => {
     interval = setInterval(async () => {
-      if (document.visibilityState !== 'visible') return; // Skip if tab not visible
+      if (document.visibilityState !== 'visible') return; // Skip polling if tab is not active
 
       try {
         const response = await fetch(`${baseURL}/orders/new`);
         if (!response.ok) throw new Error('Failed to fetch new orders');
+
         const newOrders = await response.json();
 
         if (newOrders.length > 0) {
+          // Add only unique new orders
           setOrders((prev) => {
             const existingIds = new Set(prev.map(order => order._id));
             const uniqueNewOrders = newOrders.filter(order => !existingIds.has(order._id));
             return [...prev, ...uniqueNewOrders];
           });
+
+          // Update new order count
           setNewOrderCount((prev) => prev + newOrders.length);
+
+          // Play notification sound
+          try {
+            notificationSound.currentTime = 0; // Restart from beginning
+            await notificationSound.play();
+          } catch (err) {
+            console.warn('Autoplay blocked or error playing sound:', err);
+          }
         }
       } catch (err) {
         console.error('Error fetching new orders:', err);
       }
-    }, 30000);
+    }, 30000); // Poll every 30 seconds
   };
 
-  // Start polling initially
   startPolling();
 
-  // Pause/resume polling on tab visibility change
+  // Handle tab visibility change
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
       if (!interval) startPolling();
@@ -220,12 +230,12 @@ useEffect(() => {
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
 
-  // Cleanup
   return () => {
     clearInterval(interval);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
   };
 }, []);
+
 
 
 
@@ -1750,8 +1760,16 @@ const PaymentModal = ({ setShowPaymentModal, setPayments, setError }) => {
               </div>
             )}
 {activeTab === 'reports' && (
+
+  
   <div className="space-y-6">
     <h2 className="text-2xl font-bold">Reports & Analytics</h2>
+
+    
+    {/* <button onClick={() => new Audio('../public/notify.mp3').play()}>
+  🔊 Test Sound
+</button> */}
+
 
     <div className="p-6 bg-white rounded-lg shadow-sm">
       <h3 className="mb-4 text-lg font-semibold">Monthly Report</h3>
